@@ -816,7 +816,7 @@ Editors note: from what I recall from family, there was much talk about the beet
 
 **[jaques-a.transcript.md 00:32:43–00:33:09] Speaker B:** We were that we could go home because it was too cold there on the farm picking up those cold potatoes. And we we managed. when we come home and we were sitting around there and waited and every couple of months we was examined again, we was ready to go to the front again. But I I did feel like going back in the front again.
 
-Editors note: what the actual fuck, you wanted to go back to the front?!
+Editors note: what?! you wanted to go back to the front?!
 
 **[jaques-a.transcript.md 00:33:10–00:33:23] Speaker B:** So I was always more or less sick ~~for my~~, I had pain in my chest ~~and~~ \[un\]till the war was over. And now it didn't last long. no more then.
 
