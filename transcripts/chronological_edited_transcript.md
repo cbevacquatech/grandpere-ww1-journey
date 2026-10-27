@@ -821,8 +821,8 @@ Editors note: what?! you wanted to go back to the front?!
 **[jaques-a.transcript.md 00:33:10–00:33:23] Speaker B:** So I was always more or less sick ~~for my~~, I had pain in my chest ~~and~~ \[un\]till the war was over. And now it didn't last long. no more then.
 
 Editors note: it sounds as though the wound either:
-a) took the entire war to heal.
-b) he used it as an excuse to not go back into the meat grinder.
+Editors note: a) took the entire war to heal.
+Editors note: b) he used it as an excuse to not go back into the meat grinder.
 
 ### Later retelling
 
