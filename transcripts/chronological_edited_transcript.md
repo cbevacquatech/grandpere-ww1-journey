@@ -219,7 +219,7 @@ Editors note again: Machine learning claims that a plausible candidate is Radvil
 
 **[jaques-a.transcript.md 00:45:48–00:45:58] Speaker B:** on the farm there. and there was a Russian woman and she did give me a piece of bacon.
 
-Editors note: what a fuckin score!
+Editors note: what a score!
 
 **[jaques-a.transcript.md 00:45:59–00:46:02] Speaker B:** I want to \[give\] some silver money but she wouldn't take it.
 
@@ -361,7 +361,7 @@ Editors note: this is an incorrect detection from the ML algorithm used to detec
 
 **[jaques-a.transcript.md 00:06:24–00:06:28] Speaker B:** So then all of a sudden the Russians start shooting at us.
 
-**[jaques-a.transcript.md 00:06:29–00:06:38] Speaker B:** Then when the order came, dig in, so we had all a big shovel (this sounds like slurred "shagun", maybe shotgun or shovel), everyone had to dig a hole to get down inside.
+**[jaques-a.transcript.md 00:06:29–00:06:38] Speaker B:** Then when the order came, dig in, so we had all a big shovel, everyone had to dig a hole to get down inside.
 
 **[jaques-a.transcript.md 00:06:39–00:06:52] Speaker B:** And then the next morning we got further ahead and there were some trenches and in the trenches were some holes where you could sleep in it, you lay down in those trenches.
 
@@ -373,7 +373,7 @@ Editors note: this is an incorrect detection from the ML algorithm used to detec
 
 **[jaques-a.transcript.md 00:07:22–00:07:36] Speaker B:** But in the meantime then it got cold, it got really cold. But we still managed with our clothes on and sleeping in the barn and a little bit of straw, you know.
 
-Editors note: This is likely a missed opportunity for Jacques to tell a near-death experience. According to my grandfather and mother, Jacques hid out in a lot of barns. One of the persistent problems during WWI was fleas. His troop was hiding out in a barn over night. One of his troop members decided to start killing the eggs of the fleas in his coat by using a match to burn them out. Jacques would claim that they went "pop, pop, pop" when they started to get the eggs or fleas. This was a bad idea around so much hay. Eventually the barn goes up in flames. Jacques wakes up in engulfed (engulfed may be an exaggeration) and has a choice: grab his boots or his gun. He chose his boots. He got in a lot of trouble for not grabbing his gun. 
+Editors note: This is likely a missed opportunity for Jacques to tell a near-death experience. According to family, Jacques time in a barn was almost deadly. One of the persistent problems during WWI was fleas. His troop was hiding out in a barn over night. One of hisbuddies decided to start killing the eggs of the fleas in his coat by using a match to burn them out. Veterans would claim that they went "pop, pop, pop" when the flame started to burn the eggs or fleas. In hindsight, this was a bad idea around so much hay. Eventually the barn goes up in flames. Jacques wakes up with the barn on fire and has a choice: grab his boots or his gun. He chose his boots. He got in a lot of trouble for not grabbing his gun. 
 
 **[jaques-a.transcript.md 00:07:38–00:07:46] Speaker B:** So all of a sudden the order came we have to move. We moved I is so far right away where we moved.
 
@@ -1339,7 +1339,7 @@ Editors note: Still no idea what island this is.
 
 **[jaques-b.transcript.md 00:22:26–00:22:28] Speaker A:** That's a guy that you have nobody.
 
-Editors note: he was about 100-104 at this time. His worry about being alone is quite sad in this context. Essentially he is claiming that if he was alone at the time of the hemorrhage, he would have surely died.
+Editors note: he was about 100-104 at this time. Essentially he is claiming that if he was alone at the time of the hemorrhage, he would have surely died.
 
 -------- v CUT THIS SECTION OUT v --------
 
@@ -1505,8 +1505,6 @@ Editors note: recording starts
 **[jaques-b.transcript.md 00:29:07–00:29:08] Speaker A:** and
 
 **[jaques-b.transcript.md 00:29:09–00:29:25] Speaker A:** incorporated Alsace in the in the in the Westmark he called it. And then he took all the young men and put it and put them in the army. So Joseph was drafted in the German army.
-
-Editors note: this is the first time i have ever heard of a relative in the Nazi army. My grandfather on my Dad's side fought against the Nazis in the Battle of the Bulge and helped liberate Dachau.
 
 **[jaques-b.transcript.md 00:29:27–00:29:33] Speaker A:** He had a training in Hungary. We put an event to Hungary and the training came.
 
