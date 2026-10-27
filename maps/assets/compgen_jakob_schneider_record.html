@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" xmlns:header="http://www.w3.org/1999/xhtml">
+<head>
+     <title>Verlustlisten Deutsches Reich 1. Weltkrieg, page 14721: Schneider Jakob (Eyweiler, Zabern)</title>
+     <meta name="msvalidate.01" content="C3438E58A0FC1E80B688D421B8B765CC" />
+
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="/images/favicon.ico"
+          type="image/x-icon"/>
+
+    <link rel="stylesheet" href="/css/main.css"/>
+    <link rel="stylesheet" href="/webjars/bootstrap/3.4.1/css/bootstrap.min.css" media="screen"/>
+    <link rel="stylesheet" href="/webjars/datatables/1.13.5/css/jquery.dataTables.min.css"/>
+
+    
+</head>
+<body>
+<div id="globalWrapper">
+    <div id="column-content">
+        <div id="content">
+            <a name="top" id="top"></a>
+            <div id="bodyContent">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <h1>Verlustlisten Deutsches Reich 1. Weltkrieg, page 14721: Schneider Jakob (Eyweiler, Zabern)</h1>
+                    <div style="text-align:right;" class="text-muted">
+                        <div>Verlustlisten Deutsches Reich 1. Weltkrieg</div>
+                        
+                    </div>
+                </div>
+
+                
+                
+
+                <section>
+    <div class="body">
+        <p>
+            <span>UUID</span>:
+            <span id="entry-uuid">6b12973e-648b-11ef-b615-0242ac104001</span>
+            <button type="button" class="btn btn-default btn-xs" onclick="navigator.clipboard.writeText(document.getElementById('entry-uuid').textContent)" title="Copy UUID">
+                <span class="glyphicon glyphicon-copy"></span>
+            </button>
+        </p>
+
+        <div class="row">
+            <div class="col-md-6">
+                
+                    <div>
+    <script type="text/javascript" src="/webjars/openseadragon/2.4.2/build/openseadragon/openseadragon.min.js"></script>
+    <style>
+        #imageViewer [data-osd-tooltip]:hover::after {
+            content: attr(data-osd-tooltip);
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 2px;
+            padding: 2px 6px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: nowrap;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+    
+    <div id="imageViewer"
+         style="width:100%; max-width:555px; height:693.75px;">
+    </div>
+    <script>
+        (function () {
+            var posX = 244;
+            var posY = 4440;
+            var pageWidth = 4259;
+            var pageHeight = 6292;
+            // fraction of the visible width by which the entry is placed left of the centre (set via th:with)
+            var focusShift = 0.2;
+
+            var osdScript = document.querySelector('script[src*="openseadragon"]');
+            var prefixUrl = osdScript.src.replace('openseadragon.min.js', 'images/');
+
+            OpenSeadragon.setString('Tooltips.ZoomIn', "Zoom in");
+            OpenSeadragon.setString('Tooltips.ZoomOut', "Zoom out");
+            OpenSeadragon.setString('Tooltips.Home', "Reset view");
+            OpenSeadragon.setString('Tooltips.FullPage', "Full screen");
+
+            // always show the red "hover" images so the control buttons stand out on the scan
+            function redButton(name) {
+                return {
+                    REST: name + '_hover.png',
+                    GROUP: name + '_hover.png',
+                    HOVER: name + '_hover.png',
+                    DOWN: name + '_pressed.png'
+                };
+            }
+
+            var viewer = window._osdViewer = OpenSeadragon({
+                id: 'imageViewer',
+                prefixUrl: prefixUrl,
+                navImages: {
+                    zoomIn: redButton('zoomin'),
+                    zoomOut: redButton('zoomout'),
+                    home: redButton('home'),
+                    fullpage: redButton('fullpage')
+                },
+                tileSources: {
+                    type: 'image',
+                    url: "https:\/\/files.genealogy.net\/verlustlisten\/14721.jpg"
+                },
+                showNavigator: true,
+                navigatorPosition: 'TOP_RIGHT',
+                navigatorSizeRatio: 0.2,
+                animationTime: 0.3,
+                zoomPerClick: 1.5,
+                minZoomImageRatio: 1,
+                maxZoomPixelRatio: 3,
+                visibilityRatio: 0.5
+            });
+
+            // replace the delayed native tooltips of the control buttons with immediate CSS hover texts
+            [viewer.zoomInButton, viewer.zoomOutButton, viewer.homeButton, viewer.fullPageButton].forEach(function (button) {
+                if (button && button.tooltip) {
+                    button.element.setAttribute('data-osd-tooltip', button.tooltip);
+                    button.element.setAttribute('aria-label', button.tooltip);
+                    button.element.removeAttribute('title');
+                }
+            });
+
+            // red arrow pointing at the entry, approaching from WNW; its tip sits at 42/20 inside the svg
+            function createMarker() {
+                var el = document.createElement('div');
+                el.style.cssText = 'width:46px;height:24px;margin-left:-42px;margin-top:-20px;pointer-events:none;';
+                el.innerHTML = '<svg width="46" height="24" viewBox="0 0 46 24" xmlns="http://www.w3.org/2000/svg">'
+                    + '<line x1="5" y1="4.7" x2="30" y2="15" stroke="#d00" stroke-width="4" stroke-linecap="round"/>'
+                    + '<polygon points="42,20 26.8,20.2 31.4,9.1" fill="#d00"/>'
+                    + '</svg>';
+                return el;
+            }
+
+            window._osdSetMarkerVisible = function (visible) {
+            };
+
+            if (posX > 0 && posY > 0) {
+                var entryPoint = new OpenSeadragon.Point(posX / pageWidth, posY / pageWidth);
+                var markerVisible = true;
+                var markerEl = null;
+
+                function focusEntry(immediately) {
+                    viewer.viewport.zoomTo(3, null, immediately);
+                    var shift = new OpenSeadragon.Point(viewer.viewport.getBounds().width * focusShift, 0);
+                    viewer.viewport.panTo(entryPoint.plus(shift), immediately);
+                }
+
+                viewer.addHandler('open', function () {
+                    if (!markerVisible) {
+                        return;
+                    }
+                    focusEntry(true);
+
+                    markerEl = createMarker();
+                    viewer.addOverlay(markerEl, entryPoint, OpenSeadragon.Placement.TOP_LEFT);
+                });
+
+                viewer.addHandler('home', function (e) {
+                    if (!markerVisible) {
+                        return;
+                    }
+                    e.preventDefault = true;
+                    focusEntry(false);
+                });
+
+                // the marker only makes sense on the entry's own scan; the open handler re-adds it
+                window._osdSetMarkerVisible = function (visible) {
+                    markerVisible = visible;
+                    if (!visible && markerEl) {
+                        viewer.removeOverlay(markerEl);
+                        markerEl = null;
+                    }
+                };
+            }
+        })();
+    </script>
+</div>
+                
+                <div class="small">
+                    <span>
+                        <a href="https://files.genealogy.net/verlustlisten/14721.jpg" target="_blank">
+                            <span class="glyphicon glyphicon-download"></span> <span>Download scan</span>
+                        </a>
+                    </span>
+                    <span id="prevScan">
+                        <a href="#" title="Go to previous page" onclick="stepScan(-1); return false;">
+                            <span class="glyphicon glyphicon-arrow-left"></span> <span>Previous</span>
+                        </a>
+                    </span>
+                    <span id="nextScan">
+                        <a href="#" title="Go to next page" onclick="stepScan(1); return false;">
+                            <span>Next</span> <span class="glyphicon glyphicon-arrow-right"></span>
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-striped">
+                    <tr>
+                        <td>Page Number</td>
+                        <td>14721</td>
+                        <td class="correction invisible">-</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Ausgabe</td>
+                        <td class="value">1149</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Datum</td>
+                        <td class="value">1916-09-11</td>
+                    </tr>
+                    <tr>
+                        <td>Last name</td>
+                        <td>Schneider</td>
+                    </tr>
+                    <tr>
+                        <td>First name</td>
+                        <td>Jakob</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Ort</td>
+                        <td class="value">Eyweiler, Zabern</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Liste</td>
+                        <td class="value">Preußen 630</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Reg. o.ä.</td>
+                        <td class="value">Reserve-Infanterie-Regiment 59</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Status</td>
+                        <td class="value">verwundet</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">GOV-Id</td>
+                        <td class="value">EYWLERJN38NU</td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Dienstgrad</td>
+                        <td class="value"></td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Bemerk.</td>
+                        <td class="value"></td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Bemerkung</td>
+                        <td class="value"></td>
+                    </tr>
+                    <tr class="prop">
+                        <td class="name">Geburtsdatum</td>
+                        <td class="value"></td>
+                    </tr>
+                </table>
+                <p>
+                    <a href="/search/suggest?id=4575988" id="reportTypo">
+                        <span class="glyphicon glyphicon-flag"></span> <span>Report a transcription mistake for this entry.</span>
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        
+
+        <p><a href="http://wiki-de.genealogy.net/Verlustlisten_Erster_Weltkrieg/Bedienungsanleitung#Bedienungsanleitung_f.C3.BCr_Suchende" class="external">Hier findet man Tipps für die Suche</a></p>
+
+        <div class="bs-callout bs-callout-info">
+            <h2>note</h2>
+            <p>Please note that the DES is a data <em>entry</em> system. The data shown here is just a working state. This entry should only be referenced by its UUID, which you can use in the global search.</p>
+        </div>
+
+        
+
+        <div class="bs-callout bs-callout-success">
+            <h2>Support this project</h2>
+            <p>All data here is freely accessible. One day of server operations costs around 130 euros. Even a small donation helps keep this service running.</p>
+            <a href="https://www.compgen.de/spenden" class="btn btn-success" target="_blank">Support us now</a>
+        </div>
+
+        
+
+        
+
+    </div>
+    <script>
+        // browse only within the entry's scan and its direct neighbours (entries may continue on the next page)
+        var scans = {
+            '-1': "https:\/\/files.genealogy.net\/verlustlisten\/14720.jpg",
+            '0': "https:\/\/files.genealogy.net\/verlustlisten\/14721.jpg",
+            '1': "https:\/\/files.genealogy.net\/verlustlisten\/14722.jpg"
+        };
+        var scanOffset = 0;
+
+        function stepScan(direction) {
+            var viewer = window._osdViewer;
+            var target = scanOffset + direction;
+            if (!viewer || !scans[target]) {
+                return;
+            }
+            scanOffset = target;
+            window._osdSetMarkerVisible(scanOffset === 0);
+            viewer.open({type: 'image', url: scans[scanOffset]});
+            updateScanLinks();
+        }
+
+        function updateScanLinks() {
+            var prev = document.getElementById('prevScan');
+            var next = document.getElementById('nextScan');
+            if (prev) {
+                prev.style.visibility = scans[scanOffset - 1] ? 'visible' : 'hidden';
+            }
+            if (next) {
+                next.style.visibility = scans[scanOffset + 1] ? 'visible' : 'hidden';
+            }
+        }
+    </script>
+</section>
+
+                <div class="visualClear"></div>
+            </div>
+        </div>
+    </div>
+    <div id="column-one">
+        <div id="p-logo">
+            <a href="/"
+               style="background-image: url(/images/compgen-logo-144.png);"></a>
+        </div>
+
+        
+
+        <div class="portlet">
+            <h5>Project</h5>
+
+            <div class="pBody">
+                <ul>
+                    <li><a href="/eingabe-verlustlisten/list/overview">Start page</a></li>
+                    <li ><a href="https://wiki.genealogy.net/Verlustlisten_Erster_Weltkrieg/Projekt" class="external">Project Description</a></li>
+                    <li ><a href="/eingabe-verlustlisten/statistics">Statistics</a></li>
+                    <li ><a href="/eingabe-verlustlisten/contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="portlet">
+
+            <h5>Data Entry</h5>
+
+            <div class="pBody">
+                <ul>
+                        
+                        
+                        <li><a href="https://wiki.genealogy.net/Verlustlisten_Erster_Weltkrieg/Editionsrichtlinien" class="external">Editing Rules</a></li>
+                        
+                    <li><a href="https://docs.genealogy.net/des/" class="external">User guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="portlet">
+            <h5>Search</h5>
+
+            <div class="pBody">
+                <ul>
+                        <li ><a href="/eingabe-verlustlisten/search">Search in this project</a></li>
+                        
+                </ul>
+                <ul>
+                    <li>
+                        <a href="/search/allProjects">Search in all projects</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="portlet">
+            <h5>Account</h5>
+
+            <div class="pBody">
+                <ul>
+                    <li id="main-select-language"><a href="/language">Change language</a></li>
+                    <li><a href="/start/login">Login</a></li>
+                    <li><a href="https://team.genealogy.net/signup/" class="external">Register as user</a></li>
+                    
+                </ul>
+            </div>
+        </div>
+
+        <div class="visualClear"></div>
+    </div>
+    <footer id="footer">
+        <p>
+            <span>The universal Data Entry System is a project of the</span>
+            <br/>
+            <a href="http://compgen.de/" class="verweis">
+                <img style="border:0;" src="/images/compgen.png" alt="Verein für Computergenealogie e.V."
+                     width="180" height="33"/>
+            </a>
+            <br/>
+            <span></span>
+            <br/>
+            <a href="https://www.compgen.de/impressum/">Imprint</a>
+            -
+            <a href="https://www.compgen.de/datenschutzerklaerung_genealogienetz/">Privacy</a>
+        </p>
+
+    </footer>
+</div>
+<div id="menu">
+<ul id="menue-row">
+<li class="home-tab"><a href="https://www.genealogy.net" title="To the main page of genealogy.net">Home</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/" title="Genealogical wiki, the information center (in German)">GenWiki</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/Computergenealogie" title="Our magazine 'Computergenealogie' (in German)">Magazine</a></li>
+<li class="home-tab"><a href="https://team.genealogy.net/group/treffpunkt/event/calendar/" title="Genealogical Event Calendar (in German)">Events</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/Portal:Regional_Research" title="Help for regional research (in German)">Regional research</a></li>
+<li class="db-tab"><a href="https://wiki.genealogy.net/Portal:Databases" title="Join-in database projects at genealogy.net (in German)">Databases</a></li>
+<li class="home-tab"><a href="https://www.digibib.genealogy.net/viewer/" title="Digital library - scanned genealogical literature (mostly German)">DigiBib</a></li>
+<li class="home-tab"><a href="https://des.genealogy.net" title="Data Entry System">DES</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/Kategorie:Genealogiesoftware" title="Software for genealogists (in German)">Software</a></li>
+<li class="home-tab"><a href="https://discourse.genealogy.net" title="Exchange with other people! ">Communication</a></li>
+<li class="home-tab"><a href="https://forum.genealogy.net" title="The genealogical forum (in German)">Forum</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/Portal:Societies" title="List of genealogical societies in German speaking areas">Societies</a></li>
+<li class="home-tab"><a href="https://wiki.genealogy.net/Portal:Praktische_Hilfe" title="Help for beginning genealogists (in German)">Help/FAQs</a></li>
+</ul>
+<ul id="menue-subrow">
+<li class="db-tab"><a href="https://gedbas.genealogy.net?lang=en" title="Genealogical Database - collected personal data (in German)">GEDBAS</a></li>
+<li class="db-tab"><a href="https://gov.genealogy.net/?lang=en" title="GOV - the historical gazeteer">GOV</a></li>
+<li class="db-tab"><a href="https://ofb.genealogy.net" title="Local Heritage Books - online (in German)">Local Heritage Book</a></li>
+<li class="db-tab-active"><a href="https://adressbuecher.genealogy.net" title="Database of historic city directories addressbooks (in German)">City directories</a></li>
+<li class="db-tab"><a href="https://familienanzeigen.genealogy.net/" title="Database of transcribed published personal columns (in German)">Personal columns</a></li>
+<li class="db-tab"><a href="https://grabsteine.genealogy.net/" title="Find a grave (in German)">Tombstones</a></li>
+<li class="db-tab"><a href="https://des.genealogy.net/eingabe-verlustlisten/search?lang=en" title="Data entry of the WW I Casualty List">WW I Casualty List</a></li>
+<li class="db-tab"><a href="https://meta.genealogy.net/?lang=en" title="Searching for persons in all database projects (name, living places)">Meta Search</a></li>
+</ul>
+</div>
+
+<script type="text/javascript" src="/webjars/jquery/1.11.1/jquery.min.js"></script>
+<script type="text/javascript" src="/webjars/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/webjars/datatables/1.13.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/webjars/htmx.org/2.0.8/dist/htmx.min.js"></script>
+
+<!-- Matomo -->
+<script type="text/javascript">
+    var _paq = window._paq || [];
+    /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+        var u="//matomo.genealogy.net/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '3']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+</script>
+<noscript><p><img src="//matomo.genealogy.net/matomo.php?idsite=3&amp;rec=1" style="border:0;" alt="" /></p></noscript>
+<!-- End Matomo Code -->
+</body>
+</html>

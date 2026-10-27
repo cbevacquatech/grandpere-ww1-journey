@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jacques's Interactive Journey Map</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; color: #26383e; }
+    body { display: grid; grid-template-rows: auto 1fr; background: #f3efe4; overflow: hidden; }
+    header { padding: 12px 18px; background: #f8f4e9; border-bottom: 1px solid #c8bfae; }
+    .site-nav { display:flex; align-items:center; gap:7px; margin:0 0 9px; font-size:13px; font-weight:700; }
+    .site-nav .brand { margin-right:auto; color:#173d49; font-family:Georgia,serif; }
+    .site-nav a { padding:5px 9px; border:1px solid #9aa9aa; border-radius:5px; color:#174f60; background:#fff; text-decoration:none; }
+    .site-nav a[aria-current="page"] { color:#fff; border-color:#174f60; background:#174f60; }
+    h1 { font: 700 24px Georgia, serif; margin: 0 0 4px; color: #173d49; }
+    header p { margin: 0; font-size: 13px; }
+    main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 390px; }
+    #map { min-height: 480px; background: #b9dbe7; }
+    #research { overflow: auto; padding: 16px 18px 28px; background: #fffaf0; border-left: 1px solid #c8bfae; }
+    #research h2 { margin: 0 0 8px; font: 700 21px Georgia, serif; color: #173d49; }
+    #research h3 { margin: 20px 0 6px; font: 700 16px Georgia, serif; color: #173d49; }
+    #research p, #research li, #research td, #research th { font-size: 13px; line-height: 1.45; }
+    #research ul, #research ol { padding-left: 20px; }
+    #research table { width: 100%; border-collapse: collapse; background: #fff; }
+    #research th, #research td { padding: 6px 7px; border: 1px solid #d8cfbe; text-align: left; vertical-align: top; }
+    #research th { width: 34%; background: #eee7d7; }
+    #research a { color: #175d77; }
+    .notice { padding: 10px 11px; border-left: 4px solid #b16a22; background: #f6ead7; }
+    .match { display:inline-block; margin: 0 0 9px; padding: 4px 8px; border-radius: 999px; color:#fff; background:#7c3f87; font-size:12px; font-weight:700; }
+    .map-button { cursor:pointer; border:0; border-radius:4px; padding:8px 10px; color:#fff; background:#174f60; font-weight:700; }
+    .numbered-marker { background: none; border: 0; }
+    .pin { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 12px system-ui; background: #b44d31; border: 2px solid #fff; box-shadow: 0 1px 5px #0008; }
+    .pin.uncertain { color: #b44d31; background: #fffaf0; border: 2px dashed #b44d31; }
+    .pin.archive { background:#7c3f87; }
+    .pin.battle { background:#cf2f43; }
+    .pin.synthesis { background:#a56a00; }
+    .pin.rail { background:#087f8c; }
+    .pin.alternative { color:#563f2c; background:#fff4d8; border:2px dashed #8a6137; }
+    .leaflet-popup-content h2 { font: 700 17px Georgia, serif; margin: 0 0 5px; color: #173d49; }
+    .leaflet-popup-content p { margin: 5px 0; }
+    .leaflet-popup { max-width: calc(100vw - 24px) !important; }
+    .leaflet-popup-content-wrapper { max-width: calc(100vw - 24px); }
+    .leaflet-popup-content {
+      width: min(500px, calc(100vw - 70px)) !important;
+      min-width: min(310px, calc(100vw - 70px));
+      max-width: calc(100vw - 70px);
+      max-height: min(68vh, 620px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      padding-right: 7px;
+    }
+    .leaflet-popup-content img, .leaflet-popup-content svg { max-width: 100%; }
+    .confidence { font-size: 12px; color: #6c4b32; }
+    .legend { background: #fff; padding: 8px 10px; border-radius: 5px; box-shadow: 0 1px 5px #0005; line-height: 1.5; }
+    .key { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; background:#b44d31; }
+    .key.uncertain { background:#fffaf0; border:2px dashed #b44d31; width:8px; height:8px; }
+    .route-key { width:31px; height:8px; margin:0 6px 1px 0; vertical-align:middle; overflow:visible; }
+    .front-key { display:inline-block; width:20px; height:0; border-top:4px solid; margin:0 6px 3px 0; }
+    .scan-excerpt { display:block; width:460px; max-width:100%; height:auto; margin:9px 0 6px; border:1px solid #766c5c; background:#eee; }
+    .source-note { font-size:11px; color:#655b4c; }
+    .event-date { padding:5px 7px; border-radius:4px; background:#edf3f1; font-size:12px; }
+    .date-kind { color:#76512e; font-style:italic; }
+    .timeline { list-style:none; padding:0 !important; }
+    .timeline li { margin:0 0 7px; padding:7px 8px; border-left:3px solid #174f60; background:#fff; }
+    .timeline button { padding:0; border:0; color:#175d77; background:none; font:700 13px system-ui; cursor:pointer; text-align:left; }
+    .record-status { display:inline-block; padding:2px 6px; border-radius:3px; background:#f0ddbd; color:#6b4318; font-size:11px; font-weight:700; }
+    .translation { margin:8px 0; padding:7px 9px; border-left:3px solid #7c3f87; background:#f4eef5; }
+    .translation summary { cursor:pointer; color:#5e2c69; font-weight:700; }
+    .translation p { line-height:1.42; }
+    #audio-dock { position:fixed; z-index:1200; left:12px; right:12px; bottom:10px; display:none; padding:9px 12px 11px; border:2px solid #173d49; border-radius:8px; background:#102c35f2; color:#fff; box-shadow:0 3px 18px #0009; }
+    #audio-dock.active { display:block; }
+    .audio-head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    #audio-title { flex:1; font-size:13px; font-weight:700; }
+    #audio-note { color:#d9cdb7; font-size:11px; font-weight:400; }
+    #audio-close { cursor:pointer; border:1px solid #ffffff80; border-radius:4px; padding:3px 8px; color:#fff; background:#ffffff18; font-weight:700; }
+    #journey-audio { display:block; width:100%; height:34px; }
+    #audio-subtitles { min-height:2.7em; max-height:4.2em; overflow:auto; margin-top:7px; padding:6px 10px; border-radius:4px; background:#0009; color:#fff; text-align:center; font-size:16px; line-height:1.35; }
+    #audio-subtitles .speaker { color:#f4c76b; font-size:11px; font-weight:700; text-transform:uppercase; }
+    @media (max-width: 850px) {
+      body { overflow:auto; }
+      main { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+      #research { overflow:visible; border-left:0; border-top:1px solid #c8bfae; }
+      h1 { font-size: 19px; } header p { font-size: 11px; }
+      .leaflet-popup-content {
+        width: calc(100vw - 62px) !important;
+        min-width: 0;
+        max-width: calc(100vw - 62px);
+        max-height: 56vh;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav class="site-nav" aria-label="Jacques Schneider archive">
+    <span class="brand">Jacques Schneider archive</span>
+    <a href="narrator_journey_interactive.html" aria-current="page">Journey map</a>
+    <a href="chronological_transcript_player.html">Audio &amp; transcript</a>
+  </nav>
+  <h1>Jacques's journey</h1>
+  <p>Choose one of the three path versions in the map control, then scroll or pinch to zoom and drag to move. Clicking any route marker opens its evidence and starts the corresponding oral-history passage with subtitles. For reconstructed points, the audio is related testimony—not proof of the exact mapped location.</p>
+</header>
+<main>
+<div id="map" aria-label="Interactive map of Jacques's journey and the Jakob Schneider archival candidate"></div>
+<aside id="research">
+  <span class="match">Strong candidate — not yet proven</span>
+  <h2>Jakob Schneider archival match</h2>
+  <p>A German casualty-list entry closely matches Jacques’s name, likely home village, regiment, theaters of service, and reported wound during the Brusilov Offensive.</p>
+  <button class="map-button" id="show-candidate" type="button">Zoom to the archival route</button>
+
+  <h3>Three path versions</h3>
+  <ol>
+    <li><strong>Narrated locations:</strong> only places Jacques named or described in the recording; uncertain identifications remain visibly marked.</li>
+    <li><strong>Archival/unit route:</strong> the casualty record and documented RIR 59 / 1st Reserve Division theaters; it does not claim Jacques personally occupied every unit location.</li>
+    <li><strong>Combined synthesis:</strong> narrated and archival evidence joined into the most plausible chronology. Gold markers identify this interpretive version, and every popup states its evidence class and supporting data.</li>
+  </ol>
+  <p class="notice">The map selector uses radio buttons because these are alternative reconstructions, not three independent routes that should be read simultaneously. WWI front overlays remain independently toggleable.</p>
+
+  <h3>Likely 1916 rail evacuation</h3>
+  <p>The teal overlay separates the documented railway geography from Jacques's unlocated first hospital. Its <strong>train marker at Świstelniki/Svitanok</strong> is the leading candidate for a loading or collection point because the railway crossed the Narajówka sector occupied by RIR 59 on 5–7 September 1916. The highlighted corridor then follows a plausible pre-1914 railway connection west through Lviv, Przemyśl and Kraków into Upper Silesia and onward toward Breslau/Wrocław.</p>
+  <p class="notice"><strong>Evidence limit:</strong> the stations and railway network are historical; Jacques's use of this particular railhead, junction sequence, and destination hospital is inferred. No located hospital register or transport list yet supplies his train number or exact route.</p>
+
+  <h3>German casualty-list entry</h3>
+  <table>
+    <tr><th>Name</th><td>Jakob Schneider</td></tr>
+    <tr><th>Home locality</th><td>Eyweiler, Kreis Zabern</td></tr>
+    <tr><th>Unit</th><td>Reserve-Infanterie-Regiment Nr. 59</td></tr>
+    <tr><th>Status</th><td><em>verwundet</em> — wounded</td></tr>
+    <tr><th>GOV place ID</th><td>EYWLERJN38NU</td></tr>
+    <tr><th>Published</th><td>11 September 1916</td></tr>
+    <tr><th>List</th><td>Preußen 630, issue 1149, page 14,721</td></tr>
+  </table>
+
+  <h3>Why the match is compelling</h3>
+  <ol>
+    <li><strong>Name:</strong> an Alsatian Jacques could appear as <em>Jakob</em> in Imperial German records.</li>
+    <li><strong>Home:</strong> Eyweiler is modern Eywiller near Saverne. Its spoken name may explain the transcript’s uncertain “Aviaire.”</li>
+    <li><strong>Unit route:</strong> RIR 59 belonged to the 1st Reserve Division, which served in East Prussia and the Baltic/Eastern Front before moving to Galicia during the Brusilov Offensive.</li>
+    <li><strong>Timing:</strong> RIR 59 fought from the Strypa to the Zlota Lipa and Narajowka in July–September 1916. Its I Battalion suffered nearly 500 casualties near Horozanka on 31 August; the casualty entry was published September 11.</li>
+    <li><strong>Context:</strong> Alsatian-Lorrain soldiers were frequently directed to the Eastern Front.</li>
+  </ol>
+
+  <h3>What the record does not prove</h3>
+  <p class="notice">The list gives no birth date, parents, occupation, service number, company, exact wound date, or hospital. Its publication date may lag the injury. Unit movements do not prove that Jakob personally accompanied every movement shown on the map.</p>
+
+  <h3>Best confirmation records</h3>
+  <ul>
+    <li>Eywiller civil birth records and parents’ names.</li>
+    <li>The continuation page of the 1922 passenger manifest, which may add his U.S. contact, ticket, money, prior-U.S.-residence, birthplace, and physical-description fields.</li>
+    <li>Alsatian veteran-card or pension files.</li>
+    <li>German military hospital records. His exact date, 16 July 1895, is now known and falls within the Bundesarchiv's surviving July-born sample for the 1891–1899 birth years.</li>
+  </ul>
+
+  <h3>Military-career reconstruction</h3>
+  <p><span class="record-status">NEW PRIMARY UNIT SOURCE</span></p>
+  <p>Hellmuth Neumann's 1927 history of Reserve-Infanterie-Regiment 59 was compiled from official documents and reports by participants. Its sequence—East Prussia, Poland, Lithuania, Dünaburg, Galicia and Riga—closely matches Jacques's recollections. The history documents these RIR 59 operations immediately before the 11 September casualty-list notice:</p>
+  <ul>
+    <li><strong>5 July–7 August:</strong> Strypa, Baryszka and Koropiec sectors.</li>
+    <li><strong>7–15 August:</strong> withdrawal toward the Zlota Lipa.</li>
+    <li><strong>14–30 August:</strong> positions along the Zlota Lipa.</li>
+    <li><strong>10 August:</strong> I Battalion lost about 200 men near Korosziatyn.</li>
+    <li><strong>31 August:</strong> I Battalion was enveloped south of Horozanka and lost almost 500 men, leaving it temporarily without combat value. This is the strongest battle-based wound hypothesis.</li>
+    <li><strong>5–7 September:</strong> the regiment withdrew at night toward Swistelniti and occupied a new line along the Narajowka. This is the main alternate window because Jacques remembered being wounded at night.</li>
+  </ul>
+  <p class="notice"><strong>Important:</strong> the history documents the regiment and its battalions, not Jakob personally. His company and battalion remain unknown. The map therefore displays Horozanka as a leading hypothesis and the Narajowka withdrawal as an alternate—not as established personal stops.</p>
+  <p><a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">Open complete digitized RIR 59 history</a> · <a href="rir59_english_translations.md" target="_blank">English translations of cited excerpts</a> · <a href="assets/rir59_1916_page_176.jpg" target="_blank">local copy: 31 August losses, printed p. 168</a> · <a href="assets/rir59_1916_page_178.jpg" target="_blank">local copy: Narajowka withdrawal, printed p. 170</a></p>
+
+  <h3>Immigration record</h3>
+  <p><span class="record-status">MANIFEST IDENTIFIED</span></p>
+  <p>The FamilySearch/NARA manifest identifies <strong>Jacques Schneider, age 26</strong>, on list line 18 of the <strong>S.S. <em>La Lorraine</em></strong>, sailing from <strong>Le Havre on 18 February 1922</strong>. His age precisely fits the confirmed birth date of 16 July 1895. The row records him as a single French waiter, last resident in Paris; it names friend Mr. Jaeger, 3 rue des Francs Bourgeois, Paris, and gives <strong>Newark</strong> as his intended final destination.</p>
+  <p class="notice"><strong>This corrects the earlier March 1923 theory.</strong> The St. Patrick’s Day passage in the oral history cannot be used as an exact next-day arrival date. The primary manifest is stronger evidence. The downloaded sheet gives the sailing date but does not display the New York arrival date or landing pier, so neither is stated as certain here.</p>
+  <table>
+    <tr><th>Search identity</th><td>Jacques/Jakob Schneider, born 16 July 1895</td></tr>
+    <tr><th>Documented sailing</th><td>Le Havre, 18 February 1922, S.S. <em>La Lorraine</em></td></tr>
+    <tr><th>Manifest details</th><td>Age 26; single; waiter; French; last residence Paris; intended destination Newark</td></tr>
+    <tr><th>Disembarkation</th><td>Port of New York; exact date and pier are not printed on the downloaded sheet</td></tr>
+    <tr><th>First address</th><td>Rooming house on East 49th Street between Second and Third Avenues</td></tr>
+    <tr><th>Archive identifiers</th><td>FamilySearch image 138 of 871; image group 007619417; person ARK JN3M-4Z8</td></tr>
+  </table>
+  <svg class="scan-excerpt" viewBox="120 555 760 100" role="img" aria-label="S.S. La Lorraine manifest with Jacques Schneider's entire row highlighted">
+    <image href="assets/la_lorraine_manifest_page.png" x="0" y="0" width="918" height="1191" preserveAspectRatio="none"></image>
+    <rect x="130" y="579" width="748" height="33" fill="#ffe500" fill-opacity=".34" stroke="#d51f1f" stroke-width="4"></rect>
+  </svg>
+  <p class="source-note">The larger rectangle encloses the full line 18, including “SCHNEIDER, Jacques,” age 26, occupation, Paris contact, and Newark destination; it deliberately includes padding so no letters are clipped.</p>
+  <p><a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">Open local original-image PDF</a> · <a href="assets/familysearch_1922_la_lorraine_manifest_ocr.pdf" target="_blank">open local OCR transcript</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QS7-L9K7-PJMV?view=index&amp;personArk=%2Fark%3A%2F61903%2F1%3A1%3AJN3M-4Z8&amp;action=view&amp;lang=en" target="_blank" rel="noreferrer">FamilySearch indexed record</a></p>
+
+  <h3>How the new record changes the earlier search</h3>
+  <ul>
+    <li><strong>Identity:</strong> exact given and family names, fitting age, French nationality, Paris residence, waiter occupation, and a Newark destination collectively make this an exceptionally strong match.</li>
+    <li><strong>Chronology:</strong> the 18 February 1922 sailing is documentary evidence; the previously inferred 16 March 1923 arrival and speculative <em>Bruckner</em> lead are superseded.</li>
+    <li><strong>Geography:</strong> Newark was the stated intended destination, while Jacques recalled first taking a taxi to East 49th Street. These can coexist: a manifest destination is an intention, not proof of the first address actually used after disembarkation.</li>
+  </ul>
+
+  <h3>1950 census record</h3>
+  <p>The supplied 1950 census sheet places the family in <strong>West Belmar, Monmouth County, New Jersey</strong>, enumeration district 13-261, sheet 13, dwelling 135. Line 28 lists <strong>Jacques Schneider</strong>, age 54, born in France, married, and working 40 hours as a bartender. The household continues with wife Justine, age 48, and son Harry, age 25, both born in New York. The written house number appears to be <strong>927</strong>; the street name is inherited from an earlier line and is not visible on this sheet, so the map retains “Curtis Avenue” from the oral history without claiming that the census itself prints it here.</p>
+  <svg class="scan-excerpt" viewBox="120 1250 1340 245" role="img" aria-label="1950 West Belmar census with the Schneider household highlighted">
+    <image href="assets/west_belmar_1950_census_page.png" x="0" y="0" width="1530" height="1980" preserveAspectRatio="none"></image>
+    <rect x="120" y="1280" width="1340" height="119" fill="#ffe500" fill-opacity=".30" stroke="#d51f1f" stroke-width="6"></rect>
+  </svg>
+  <p><a href="assets/familysearch_1950_west_belmar_census.pdf" target="_blank">Open local census PDF</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QHJ-5QHW-L9Q4-1?view=index" target="_blank" rel="noreferrer">FamilySearch image 14 of 59</a></p>
+
+  <h3>U.S. death record</h3>
+  <table>
+    <tr><th>Name</th><td>Jacques Schneider</td></tr>
+    <tr><th>Born</th><td>16 July 1895</td></tr>
+    <tr><th>Died</th><td>21 February 2002</td></tr>
+    <tr><th>Age</th><td>106</td></tr>
+  </table>
+  <p>This identity and its dates are treated as confirmed based on the family’s identification. The cited web page is a death-index-derived secondary entry; it does not supply a death place, so the map does not invent a geographic death marker. <a href="https://www.ancientfaces.com/surname/schneider-family-history/813" target="_blank" rel="noreferrer">Indexed death information</a></p>
+
+  <h3>Journey chronology</h3>
+  <p>Click an event to zoom to it. “Inferred” and “estimated” labels distinguish reconstructed timing from exact dates.</p>
+  <ol class="timeline" id="journey-timeline"></ol>
+
+  <h3>Prewar political borders</h3>
+  <p>The optional <strong>Europe — borders c. 1914</strong> layer shows the political setting immediately before the First World War. It is off by default. The geometry is a performance-simplified derivative and should be read at regional scale rather than as a cadastral boundary survey. <a href="https://doi.org/10.5281/zenodo.21341486" target="_blank" rel="noreferrer">Kavanagh, <em>Map of Europe, c. 1914</em></a>.</p>
+
+  <h3>Complete document library</h3>
+  <p>Local copies are included with this map so the evidence can still be examined if an external website is unavailable.</p>
+  <ul>
+    <li><a href="../jaques-a.mp3" target="_blank">Oral-history recording A</a> · <a href="../jaques-b.mp3" target="_blank">oral-history recording B</a> — local originals used by the narrated-marker audio player</li>
+    <li><a href="../transcripts/chronological_edited_transcript.md" target="_blank">Jacques’s chronological edited transcript</a> — primary oral-history source · <a href="chronological_transcript_player.html" target="_blank">open synchronized transcript player</a></li>
+    <li><a href="narrator_journey_conclusions.md" target="_blank">Map conclusions and identification methodology</a></li>
+    <li><a href="rir59_english_translations.md" target="_blank">English translations of the cited German RIR 59 book excerpts (printed pp. 146–151 and 166–170)</a></li>
+    <li><a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">S.S. <em>La Lorraine</em> manifest, original image</a> · <a href="assets/familysearch_1922_la_lorraine_manifest_ocr.pdf" target="_blank">FamilySearch OCR transcript</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QS7-L9K7-PJMV?view=index&amp;personArk=%2Fark%3A%2F61903%2F1%3A1%3AJN3M-4Z8&amp;action=view&amp;lang=en" target="_blank" rel="noreferrer">live indexed record</a></li>
+    <li><a href="assets/familysearch_1950_west_belmar_census.pdf" target="_blank">1950 census, West Belmar, Schneider household</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QHJ-5QHW-L9Q4-1?view=index" target="_blank" rel="noreferrer">live image</a></li>
+    <li><a href="assets/casualty_list_14721_original.jpg" target="_blank">German casualty-list scan, page 14,721</a> · <a href="https://files.genealogy.net/verlustlisten/14721.jpg" target="_blank" rel="noreferrer">online original</a></li>
+    <li><a href="assets/compgen_jakob_schneider_record.html" target="_blank">CompGen Jakob Schneider record</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">live record</a></li>
+    <li><a href="assets/eywiller_place_history.html" target="_blank">Eyweiler/Eywiller place history</a> · <a href="https://de.wikipedia.org/wiki/Eywiller" target="_blank" rel="noreferrer">live page</a></li>
+    <li><a href="assets/first_reserve_division_history.html" target="_blank">1st Reserve Division organization and operations</a> · <a href="https://de.wikipedia.org/wiki/1._Reserve-Division_(Deutsches_Kaiserreich)" target="_blank" rel="noreferrer">live page</a></li>
+    <li><a href="assets/us_war_department_251_german_divisions_1920.pdf" target="_blank">U.S. War Department, <em>Histories of 251 Divisions</em> (1920)</a> — contemporary Allied intelligence history; see the 1st Reserve Division section beginning on printed page 33 · <a href="https://www.loc.gov/item/45041080/" target="_blank" rel="noreferrer">Library of Congress catalog record</a></li>
+    <li><a href="assets/west_point_wwi_atlas.html" target="_blank">U.S. Military Academy WWI campaign atlas page</a> · <a href="https://westpoint.edu/academics/academic-departments/history/world-war-one" target="_blank" rel="noreferrer">live page</a></li>
+    <li><a href="https://tandf.figshare.com/articles/dataset/Railway_network_of_Galicia_and_Austrian_Silesia_1847-1914_/12417533" target="_blank" rel="noreferrer">Kaim et al., <em>Railway network of Galicia and Austrian Silesia (1847–1914)</em></a> — historical GIS reconstruction used to support the railway overlay · <a href="https://www.agad.gov.pl/KOLEJE/mapy.html" target="_blank" rel="noreferrer">AGAD 1905/1907 Galicia railway maps</a></li>
+    <li><strong>Location photographs:</strong> <a href="assets/location_soldau_station_c1920.jpg" target="_blank">Soldau station, c. 1920</a> · <a href="assets/location_ilawa_station_modern.jpg" target="_blank">Iława station</a> · <a href="assets/location_graudenz_narrow_gauge_1914.jpg" target="_blank">Graudenz narrow-gauge locomotive, 1914</a> · <a href="assets/location_radviliskis_station_1930.jpg" target="_blank">Radviliškis station, 1930</a> · <a href="assets/location_monastyryska_modern.jpg" target="_blank">modern Monastyryska</a> · <a href="assets/location_hryhoriv_chapel_modern.jpg" target="_blank">modern Hryhoriv</a>. Each popup identifies whether its image is historical or modern and links to its Wikimedia Commons source and license.</li>
+    <li><a href="assets/archives_alsace_wwi_context.pdf" target="_blank">Archives d’Alsace: Alsatian-Lorrain soldiers in WWI</a> · <a href="https://archives.alsace.eu/media/h4hn11hu/programme_chroniques-grande-guerre_ld.pdf" target="_blank" rel="noreferrer">online original</a></li>
+    <li><a href="assets/archives_alsace_military_research.pdf" target="_blank">Archives d’Alsace military-service research guide</a> · <a href="https://archives.alsace.eu/media/ceapqt0t/services-militaires.pdf" target="_blank" rel="noreferrer">online original</a></li>
+    <li><a href="assets/bundesarchiv_wwi_personnel_records.pdf" target="_blank">Bundesarchiv WWI personnel-record guidance</a> · <a href="https://www.bundesarchiv.de/assets/bundesarchiv/de/Downloads/Listen/uebersicht_zur_verwahrung_personenbezogener_unterlagen_1849_bis_1918.pdf" target="_blank" rel="noreferrer">online original</a></li>
+    <li><a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">Neumann, <em>History of Reserve-Infanterie-Regiment 59</em> (1927)</a> — complete digitized regimental history based on official documents and participant reports; local Galicia-arrival copies: <a href="assets/rir59_1916_page_154.jpg" target="_blank">p. 146, rail route</a>, <a href="assets/rir59_1916_page_155.jpg" target="_blank">p. 147, railheads and terrain</a>, <a href="assets/rir59_1916_page_156.jpg" target="_blank">p. 148, march</a>, <a href="assets/rir59_1916_page_157.jpg" target="_blank">p. 149, burning Monasterzyska</a>, <a href="assets/rir59_1916_page_158.jpg" target="_blank">p. 150, fighting</a>, <a href="assets/rir59_1916_page_159.jpg" target="_blank">p. 151, fighting</a>; later wound-window copies: <a href="assets/rir59_1916_page_174.jpg" target="_blank">p. 166</a>, <a href="assets/rir59_1916_page_175.jpg" target="_blank">p. 167</a>, <a href="assets/rir59_1916_page_176.jpg" target="_blank">p. 168</a>, <a href="assets/rir59_1916_page_177.jpg" target="_blank">p. 169</a>, <a href="assets/rir59_1916_page_178.jpg" target="_blank">p. 170</a>.</li>
+    <li><a href="https://www.jewishgen.org/infofiles/passlists/NewYork1920.html" target="_blank" rel="noreferrer">New York passenger-manifest roll and film index, 1920–1924</a></li>
+    <li><a href="https://www.loc.gov/item/sn83030214/1922-03-17/ed-1/" target="_blank" rel="noreferrer">New-York Tribune, 17 March 1922</a> — contemporary “Arrived Yesterday” shipping report</li>
+    <li><a href="https://www.familysearch.org/en/search/collection/2451053" target="_blank" rel="noreferrer">New York vessel index, 1897–1956</a> — NARA A3464</li>
+    <li><a href="https://upload.wikimedia.org/wikipedia/commons/6/6c/Victoria_Daily_Times_%281923-03-17%29_%28IA_victoriadailytimes19230317%29.pdf" target="_blank" rel="noreferrer">Victoria Daily Times, 17 March 1923</a> — contemporary Bruckner report</li>
+    <li><a href="https://www.ancientfaces.com/surname/schneider-family-history/813" target="_blank" rel="noreferrer">Jacques Schneider death-index-derived entry</a></li>
+    <li><a href="https://doi.org/10.5281/zenodo.21341486" target="_blank" rel="noreferrer">Kavanagh, <em>Map of Europe, c. 1914</em></a> — WGS84 historical boundary dataset; the map uses a locally simplified copy of its low-resolution GeoJSON.</li>
+  </ul>
+</aside>
+</main>
+<section id="audio-dock" aria-live="polite" aria-label="Oral-history audio and subtitles">
+  <div class="audio-head"><div id="audio-title">Oral-history recording</div><button id="audio-close" type="button" aria-label="Close audio player">Close</button></div>
+  <audio id="journey-audio" controls preload="metadata"></audio>
+  <div id="audio-subtitles">Select a route location to hear the corresponding oral-history passage.</div>
+</section>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/offline_countries.js"></script>
+<script src="vendor/europe_1914_borders.js"></script>
+<script src="vendor/narrated_audio_cues.js"></script>
+<script>
+const map = L.map('map', { zoomControl: true }).setView([49, 9], 5);
+L.geoJSON(OFFLINE_COUNTRIES, {
+  interactive: false,
+  style: {color:'#9d9382', weight:0.7, fillColor:'#eee7d4', fillOpacity:1}
+}).addTo(map).bringToBack();
+
+// Historical political context. It is deliberately not added to the map at
+// startup, and remains noninteractive so country clicks cannot open overlays.
+const pre1914Borders = L.geoJSON(EUROPE_1914_BORDERS, {
+  interactive:false,
+  style:{color:'#5b3424', weight:1.7, opacity:.9, dashArray:'7 5', fill:false}
+});
+
+const stops = [
+  {n:1, name:'Eywiller / Eyweiler candidate', lat:48.872, lon:7.126, u:1, confidence:'Strong archival candidate; not proven', evidence:'The departure village transcribed as “Aviaire” may be Eyweiler (modern Eywiller). A Jakob Schneider from Eyweiler appears wounded with Reserve-Infanterie-Regiment 59 in the casualty list of 11 September 1916.'},
+  {n:2, name:'Strasbourg', lat:48.573, lon:7.752, confidence:'High for Strasbourg; strong but unproven restaurant identification', evidence:'Induction, prewar/postwar restaurant work, and repeated descriptions of being from Strasbourg/Alsace. Jacques’s “Resto Wallander” is likely a phonetic rendering of Restaurant Zur Walhalla, documented at Johannesstaden 4 (today Quai Saint-Jean), near the main railway station. A period guide calls it a restaurant serving Speyer beer. The identification is not yet conclusive because its 1914 proprietor has not been verified.'},
+  {n:3, name:'German–Polish border training area', lat:53.30, lon:19.50, u:1, confidence:'Low', evidence:'Six weeks of training “up to Germany in the Polish border”; no town is named.'},
+  {n:4, name:'Tilsit (modern Sovetsk)', lat:55.083, lon:21.883, confidence:'High', evidence:'Both mobilization accounts name Tilsit and a two-day stay.'},
+  {n:5, name:'Russian territory / winter front', lat:55.40, lon:24.80, u:1, confidence:'Low', evidence:'Boat, narrow-gauge/open rail, then several days marching. Jacques explicitly says he did not know where he was.'},
+  {n:6, name:'Radviliškis?', lat:55.81, lon:23.55, u:1, confidence:'Low', evidence:'Tentative editorial match for the phonetic “Ratsievilevitskiewicz”; not established as fact.'},
+  {n:7, name:'Galicia front', lat:49.20, lon:24.00, u:1, confidence:'Regional identification only', evidence:'Three accounts place him in Galicia during the Brusilov Offensive, but no battlefield or town is named.'},
+  {n:8, name:'Silesia hospital and recovery', lat:51.00, lon:17.00, u:1, confidence:'Regional identification only', evidence:'Sent to a Silesian hospital and later a recuperation company; no town is supplied.'},
+  {n:9, name:'Marienburg (probably modern Malbork)', lat:54.04, lon:19.03, u:1, confidence:'Medium–low', evidence:'Named as a second hospital and described as northern Germany; historical Marienburg in West Prussia is the best geographic fit.'},
+  {n:10, name:'Königsberg? (modern Kaliningrad)', lat:54.71, lon:20.51, u:1, confidence:'Medium', evidence:'Jacques says the homeward train ran from “Koenigsberg” to Strasbourg; the namesake is not conclusively established.'},
+  {n:11, name:'Berlin', lat:52.520, lon:13.405, confidence:'High', evidence:'Explicit layover on the return journey.'},
+  {n:12, name:'Wiesbaden', lat:50.08, lon:8.24, confidence:'High', evidence:'Explicit layover before finding a train to Strasbourg.'},
+  {n:13, name:'Strasbourg and home', lat:48.584, lon:7.768, confidence:'High for Strasbourg; strong but unproven restaurant identification', evidence:'Reached Strasbourg, took another train home, then returned to his prewar employer. “Resto Wallander” is likely Restaurant Zur Walhalla at Johannesstaden 4, near the station. French troops are photographed entering along nearby rue du Faubourg-National on 22 November 1918, which closely fits Jacques’s account that the restaurant filled with soldiers two days after he resumed work. The restaurant match remains inferential.'},
+  {n:14, name:'Paris', lat:48.857, lon:2.352, confidence:'High', evidence:'Moved from Strasbourg to Paris for hotel work and language experience. The 1922 manifest independently records Paris as his last permanent residence.'},
+  {n:15, name:'Le Havre — S.S. La Lorraine embarkation', lat:49.494, lon:0.107, confidence:'High', evidence:'The manifest documents Jacques Schneider, 26, sailing from Le Havre aboard the S.S. La Lorraine on 18 February 1922. The connecting line to New York indicates the voyage, not the ship’s exact track.'},
+  {n:16, name:'East 49th Street boarding house after arrival', lat:40.755, lon:-73.970, confidence:'High for oral-history destination; pier unknown', evidence:'The manifest gives Newark as his intended destination. Jacques recalled that a friend failed to meet him at the ship and that he instead took a taxi to a rooming house on 49th Street between Second and Third Avenues. The exact arrival pier is not established by the downloaded manifest sheet.'},
+  {n:17, name:'375 Park Avenue', lat:40.759, lon:-73.972, confidence:'High', evidence:'Exact address given for his first New York restaurant job.'},
+  {n:18, name:'Welfare Island hospital (now Roosevelt Island)', lat:40.758, lon:-73.949, confidence:'High for island', evidence:'“Wellfair/Welfare Island” matches the island’s 1921–1973 name; exact hospital remains unknown.'},
+  {n:19, name:'Newark relatives', lat:40.735, lon:-74.172, confidence:'High for city', evidence:'Visit to Mrs. Bergmeyer and a later trip for vacation advice; no street address.'},
+  {n:20, name:'Bronx relatives / later home', lat:40.850, lon:-73.900, u:1, confidence:'Medium–low', evidence:'The difficult passage mentions relatives and a German-speaking Bronx neighborhood, without an address.'},
+  {n:21, name:'West Belmar, Curtis Avenue', lat:40.178, lon:-74.018, confidence:'High', evidence:'The oral history identifies the family house on Curtis Avenue. The 1950 census independently places Jacques, wife Justine, and son Harry in West Belmar; the sheet shows apparent house number 927 but not the inherited street name.'}
+];
+
+// Audio selections for narrated-route markers. Times are in seconds from the
+// original local recordings and follow the edited transcript timestamps.
+const narratedAudioClips = {
+  1:{file:'a',start:227,end:240,label:'Leaving home for Strasbourg'},
+  2:{file:'a',start:227,end:254,label:'Strasbourg induction'},
+  3:{file:'a',start:241,end:291,label:'Training near the German–Polish border'},
+  4:{file:'a',start:286,end:309,label:'Arrival and two-day stay in Tilsit'},
+  5:{file:'a',start:300,end:398,label:'Boat, narrow-gauge railway and march into Russia'},
+  6:{file:'a',start:2616,end:2805,label:'The estate village remembered as “Ratsievilevitskiewicz”'},
+  7:{file:'a',start:693,end:963,label:'Transfer to Galicia and fighting during the offensive'},
+  8:{file:'a',start:1094,end:1149,label:'Evacuation to a hospital in Silesia'},
+  9:{file:'a',start:1129,end:1230,label:'Marienburg hospital'},
+  10:{file:'a',start:2031,end:2070,label:'Homeward train from Königsberg'},
+  11:{file:'a',start:2051,end:2072,label:'Berlin layover'},
+  12:{file:'a',start:2051,end:2084,label:'Wiesbaden layover and search for a Strasbourg train'},
+  13:{file:'a',start:2064,end:2258,label:'Return to Strasbourg and the arrival of French troops'},
+  14:{file:'b',start:767,end:848,label:'Hotel work in Paris and decision to emigrate'},
+  15:{file:'b',start:818,end:900,label:'Visa and preparations to travel to America',note:'Le Havre and the ship are established by the manifest; this clip is the closest narrated passage.'},
+  16:{file:'b',start:921,end:1010,label:'Taxi to the East 49th Street rooming house'},
+  17:{file:'b',start:1039,end:1131,label:'Job search and employment at 375 Park Avenue'},
+  18:{file:'b',start:1133,end:1290,label:'Hemorrhage and Welfare Island hospital'},
+  19:{file:'b',start:1353,end:1455,label:'Visit to Mrs. Bergmeyer in Newark'},
+  20:{file:'b',start:1455,end:1530,label:'Relatives and the German community in the Bronx'},
+  21:{file:'b',start:1520,end:1620,label:'Invitation and visit to Belmar'}
+};
+// Archival and synthesis points play the closest relevant oral-history passage.
+// These clips accompany the documentary reconstruction; they do not establish
+// that Jacques named or personally occupied every exact mapped coordinate.
+const archivalAudioClips = {
+  A:{...narratedAudioClips[1],note:'Related testimony; Eyweiler is established by the casualty-list identity hypothesis.'},
+  B:{...narratedAudioClips[2]},
+  C:{...narratedAudioClips[4]},
+  D:{file:'a',start:300,end:398,label:'Movement east by boat, narrow-gauge railway and on foot',note:'Related testimony for this unit-route reconstruction; Jacques does not name Šiauliai.'},
+  E:{file:'a',start:300,end:398,label:'Movement east by boat, narrow-gauge railway and on foot',note:'Related testimony for this unit-route reconstruction; Jacques does not name Panevėžys.'},
+  F:{file:'a',start:348,end:445,label:'Arrival at the eastern front and winter positions',note:'Related testimony; the exact Daugavpils position is reconstructed from unit history.'},
+  G:{file:'a',start:348,end:445,label:'Arrival at the eastern front and winter positions',note:'Related testimony; the exact Riga position is reconstructed from unit history.'},
+  H:{...narratedAudioClips[7],note:'Jacques names Galicia; the precise sector comes from the regimental history.'},
+  K:{file:'a',start:933,end:1025,label:'Galician fighting, orchard positions and the approach to the wound',note:'Related testimony; Korosziatyn is a documented unit location, not directly named in the recording.'},
+  W:{file:'a',start:1021,end:1115,label:'Wounded at night in the apple orchard and carried to a hospital',note:'Related testimony for the leading wound hypothesis; the recording does not name Horozanka.'},
+  N:{file:'a',start:1021,end:1115,label:'Wounded at night in the apple orchard and carried to a hospital',note:'Related testimony for this alternate wound window; the recording does not name Narajowka.'}
+};
+const synthesisAudioClips = {
+  S1:{...narratedAudioClips[1]}, S2:{...narratedAudioClips[2]}, S3:{...narratedAudioClips[3]},
+  S4:{...narratedAudioClips[4]}, S4a:{...narratedAudioClips[6]}, S5:{file:'a',start:348,end:445,label:'Eastern-front journey and winter positions'},
+  S5a:{file:'a',start:693,end:755,label:'Boxcar journey into Galicia and unloading near the front',note:'The named railheads come from the regimental history.'},
+  S5b:{file:'a',start:755,end:835,label:'March through mountainous country and a damaged hill town',note:'Monasterzyska is an evidence-based inference, not named in the recording.'},
+  S6:{...narratedAudioClips[7]}, S6a:{file:'a',start:835,end:963,label:'Galician terrain, trenches and combat'},
+  S7:{file:'a',start:1021,end:1115,label:'The nighttime apple-orchard wound',note:'Horozanka is the leading archival hypothesis, not a spoken place-name.'},
+  S8:{file:'a',start:1021,end:1115,label:'The nighttime apple-orchard wound',note:'Narajowka is an alternate archival hypothesis, not a spoken place-name.'},
+  S9:{file:'a',start:1046,end:1120,label:'Carried from the trenches to the first hospital'},
+  S10:{...narratedAudioClips[8]}, S11:{...narratedAudioClips[9]}, S12:{...narratedAudioClips[10]},
+  S13:{...narratedAudioClips[11]}, S14:{...narratedAudioClips[12]}, S15:{...narratedAudioClips[13]},
+  S16:{...narratedAudioClips[14]}, S17:{...narratedAudioClips[15]}, S18:{...narratedAudioClips[16]},
+  S19:{...narratedAudioClips[19]}, S20:{...narratedAudioClips[21]}
+};
+const audioDock = document.getElementById('audio-dock');
+const journeyAudio = document.getElementById('journey-audio');
+const audioTitle = document.getElementById('audio-title');
+const audioSubtitles = document.getElementById('audio-subtitles');
+let activeAudioFile = null;
+let activeAudioEnd = null;
+
+function showSubtitle(cue) {
+  audioSubtitles.replaceChildren();
+  if (!cue) {
+    audioSubtitles.textContent = '…';
+    return;
+  }
+  const speaker = document.createElement('span');
+  speaker.className = 'speaker';
+  speaker.textContent = cue.speaker + ': ';
+  audioSubtitles.append(speaker, document.createTextNode(cue.text));
+}
+function updateAudioSubtitle() {
+  if (!activeAudioFile) return;
+  const time = journeyAudio.currentTime;
+  const cues = NARRATED_AUDIO_CUES[activeAudioFile] || [];
+  const cue = cues.find(item => time >= item.start - .08 && time <= item.end + .35);
+  showSubtitle(cue);
+  if (activeAudioEnd && time >= activeAudioEnd) {
+    journeyAudio.pause();
+    activeAudioEnd = null;
+  }
+}
+function playJourneyClip(displayLabel, clip) {
+  if (!clip) return;
+  audioDock.classList.add('active');
+  audioTitle.replaceChildren(document.createTextNode(`${displayLabel} — ${clip.label}`));
+  if (clip.note) {
+    const note = document.createElement('span');
+    note.id = 'audio-note';
+    note.textContent = ` — ${clip.note}`;
+    audioTitle.append(note);
+  }
+  activeAudioFile = clip.file;
+  activeAudioEnd = clip.end;
+  const source = `../jaques-${clip.file}.mp3`;
+  const begin = () => {
+    journeyAudio.currentTime = clip.start;
+    updateAudioSubtitle();
+    journeyAudio.play().catch(() => { /* Native controls remain available if autoplay is restricted. */ });
+  };
+  if (!journeyAudio.src || !journeyAudio.src.endsWith(source.replace('../','/'))) {
+    journeyAudio.src = source;
+    journeyAudio.addEventListener('loadedmetadata', begin, {once:true});
+    journeyAudio.load();
+  } else {
+    begin();
+  }
+}
+function playNarratedStop(stop) { playJourneyClip(`${stop.n}. ${stop.name}`, narratedAudioClips[stop.n]); }
+function playArchivalStop(stop) { playJourneyClip(`${stop.n}. ${stop.name}`, archivalAudioClips[stop.n]); }
+function playSynthesisStop(stop) { playJourneyClip(`${stop.n}. ${stop.name}`, synthesisAudioClips[stop.n]); }
+journeyAudio.addEventListener('timeupdate', updateAudioSubtitle);
+journeyAudio.addEventListener('seeked', updateAudioSubtitle);
+document.getElementById('audio-close').addEventListener('click', () => {
+  journeyAudio.pause();
+  activeAudioEnd = null;
+  audioDock.classList.remove('active');
+});
+
+const eventDates = {
+  1:['May, probably 1915','year inferred'],
+  2:['May, probably 1915','year inferred'],
+  3:['May–October, probably 1915','range reconstructed from testimony'],
+  4:['October, probably 1915','month narrated; year inferred'],
+  5:['Late 1915–mid-1916','estimated'],
+  6:['Late 1915–mid-1916','tentative'],
+  7:['July–early September 1916','unit chronology and casualty timing'],
+  8:['September 1916 onward','estimated'],
+  9:['1916–1917','sequence known; date uncertain'],
+  10:['November 1918','narrated'], 11:['November 1918','narrated'],
+  12:['November 1918','narrated'], 13:['November 1918','narrated'],
+  14:['After November 1918; before 18 February 1922','bounded by sequence and manifest'],
+  15:['Departed Le Havre 18 February 1922','documented by passenger manifest'],
+  16:['Late February 1922','arrival follows documented 18 February sailing; exact date not on supplied sheet'],
+  17:['About two weeks after arrival, c. March 1922','relative timing from oral history'],
+  18:['Within first year at Park Avenue, c. 1922–1923','estimated'],
+  19:['After immigration; exact date unknown','undated'],
+  20:['Later life; exact date unknown','undated'],
+  21:['By 1950','census documents West Belmar residence; earlier visits described in oral history']
+};
+stops.forEach(s => [s.date, s.dateKind] = eventDates[s.n]);
+
+const phases = {
+  'Wartime journey': stops.slice(0, 12),
+  // Start the next polyline at point 12 so the route visibly continues to 13.
+  // Its duplicate marker is suppressed in the drawing loop below.
+  'Postwar and migration': stops.slice(11, 16),
+  'New York and New Jersey': stops.slice(15)
+};
+const overlays = {};
+overlays['Europe — borders c. 1914'] = pre1914Borders;
+const narratedRoute = L.layerGroup().addTo(map);
+const narratedBounds = L.latLngBounds(stops.map(s=>[s.lat,s.lon]));
+const markerByStop = {};
+function icon(s) {
+  return L.divIcon({className:'numbered-marker', html:`<div class="pin ${s.u ? 'uncertain' : ''}">${s.n}</div>`, iconSize:[29,29], iconAnchor:[14,14]});
+}
+
+// Archival candidate: the solid line is a unit-level reconstruction, not a
+// claim that Jakob personally stood at every plotted point.
+const archivalStops = [
+  {n:'A', name:'Eyweiler (modern Eywiller)', lat:48.872, lon:7.126, evidence:'Casualty-list home locality: Eyweiler, Kreis Zabern. This is the strongest proposed identification for the transcript’s uncertain “Aviaire.”'},
+  {n:'B', name:'Strasbourg induction', lat:48.573, lon:7.752, evidence:'Jacques explicitly recalled going to Strasbourg for induction. This point comes from the oral history, not the casualty entry.'},
+  {n:'C', name:'Tilsit / East Prussia', lat:55.083, lon:21.883, evidence:'Jacques repeatedly named Tilsit. It is consistent with movement into the northern Eastern Front.'},
+  {n:'D', name:'Šiauliai region', lat:55.934, lon:23.313, evidence:'The 1st Reserve Division operated in Lithuania. This is a unit-route orientation point, not an individually documented stop.'},
+  {n:'E', name:'Panevėžys region', lat:55.734, lon:24.357, evidence:'A documented divisional theater and a plausible stage eastward; not proof of Jakob’s personal presence.'},
+  {n:'F', name:'Daugavpils front', lat:55.875, lon:26.536, evidence:'The division served before Daugavpils through 24 June 1916.'},
+  {n:'G', name:'Riga front', lat:56.950, lon:24.105, evidence:'The division held positions before Riga until late April 1916; the order shown is a theater summary rather than a precise personal itinerary.'},
+  {n:'H', name:'Strypa–Zlota Lipa sector', lat:49.45, lon:24.72, evidence:'RIR 59 fought in the Strypa, Baryszka and Koropiec sectors from 5 July to 7 August 1916, withdrew toward the Zlota Lipa on 7–15 August, and held positions there through the end of August.'},
+  {n:'K', name:'Korosziatyn sector — I Battalion', lat:49.20, lon:25.00, evidence:'On 10 August 1916, RIR 59’s I Battalion fought near Korosziatyn and reportedly lost about 200 men. The marker is approximate because the historical locality has not yet been georeferenced with confidence.'},
+  {n:'W', name:'Horozanka — leading wound hypothesis', lat:49.14361, lon:24.91694, battle:1, evidence:'On 31 August 1916, RIR 59’s I Battalion was enveloped south of Horozanka and lost almost 500 men. This is the strongest battle-based wound hypothesis, but Jakob’s battalion and exact wound date remain unproven.'},
+  {n:'N', name:'Narajowka withdrawal — alternate wound window', lat:49.30, lon:24.88, altBattle:1, evidence:'During the night withdrawal of 5–6 September, RIR 59 moved toward Swistelniti and established a new line along the Narajowka on 6–7 September. Jacques remembered being wounded at night, making this an important alternate window.'}
+];
+const archivalDates = {
+  A:['Before departure in May, probably 1915','home locality; year inferred'],
+  B:['May, probably 1915','year inferred'],
+  C:['October, probably 1915','month narrated; year inferred'],
+  D:['1915–1916','unit-level range'], E:['1915–1916','unit-level range'],
+  F:['Through 24 June 1916','documented divisional theater'],
+  G:['Through late April 1916','documented divisional theater'],
+  H:['5 July–30 August 1916','documented regimental theater'],
+  K:['10 August 1916','documented I Battalion action; marker approximate'],
+  W:['31 August 1916 hypothesis; list published 11 September','action and publication exact; personal wound date unproven'],
+  N:['Night of 5–6 September to 7 September 1916','documented regimental movement; alternate personal hypothesis']
+};
+archivalStops.forEach(s => [s.date, s.dateKind] = archivalDates[s.n]);
+const archivalSources = {
+  A:'<a href="assets/casualty_list_14721_original.jpg" target="_blank">German casualty-list scan</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">CompGen indexed entry</a> · <a href="https://gov.genealogy.net/item/show/EYWLERJN38NU" target="_blank" rel="noreferrer">GOV locality record</a>',
+  B:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited oral-history transcript</a>',
+  C:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited oral-history transcript</a> · <a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">complete RIR 59 history</a>',
+  D:'<a href="assets/first_reserve_division_history.html" target="_blank">saved 1st Reserve Division history</a> · <a href="https://www.loc.gov/item/45041080/" target="_blank" rel="noreferrer">U.S. War Department divisional history</a>',
+  E:'<a href="assets/first_reserve_division_history.html" target="_blank">saved 1st Reserve Division history</a> · <a href="https://www.loc.gov/item/45041080/" target="_blank" rel="noreferrer">U.S. War Department divisional history</a>',
+  F:'<a href="assets/first_reserve_division_history.html" target="_blank">saved 1st Reserve Division history</a> · <a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">RIR 59 history</a>',
+  G:'<a href="assets/first_reserve_division_history.html" target="_blank">saved 1st Reserve Division history</a> · <a href="https://www.loc.gov/item/45041080/" target="_blank" rel="noreferrer">U.S. War Department divisional history</a>',
+  H:'<a href="assets/rir59_1916_page_155.jpg" target="_blank">RIR 59 history, terrain and front, printed p. 147</a> · <a href="assets/rir59_1916_page_156.jpg" target="_blank">march, printed p. 148</a> · <a href="rir59_english_translations.md" target="_blank">English translations</a>',
+  K:'<a href="assets/rir59_1916_page_174.jpg" target="_blank">RIR 59 history, printed p. 166</a> · <a href="rir59_english_translations.md" target="_blank">English translation</a>',
+  W:'<a href="assets/rir59_1916_page_174.jpg" target="_blank">action begins, printed p. 166</a> · <a href="assets/rir59_1916_page_176.jpg" target="_blank">losses, printed p. 168</a> · <a href="rir59_english_translations.md" target="_blank">English translations</a>',
+  N:'<a href="assets/rir59_1916_page_177.jpg" target="_blank">withdrawal, printed p. 169</a> · <a href="assets/rir59_1916_page_178.jpg" target="_blank">Narajówka line, printed p. 170</a> · <a href="rir59_english_translations.md" target="_blank">English translations</a>'
+};
+const archivalVisuals = {
+  A:{src:'assets/casualty_list_14721_original.jpg', caption:'German casualty list, 11 September 1916. The dedicated Horozanka popup displays the indexed Jakob Schneider line with a precise highlight.'},
+  H:{src:'assets/location_monastyryska_destruction_1917.jpg', page:'https://commons.wikimedia.org/wiki/File:Zerst%C3%B6rungen_in_MONASTERZYSKA.jpg', caption:'Wartime destruction in Monasterzyska, 1917. Austro-Hungarian War Press Office / Austrian National Library; public domain. This documents the unit’s Galician setting, not Jakob’s individual presence.'},
+  K:{src:'assets/rir59_1916_page_174.jpg', caption:'RIR 59 regimental history, printed p. 166: I Battalion’s operations at Korosziatyn and Horozanka.'},
+  N:{src:'assets/rir59_1916_page_178.jpg', caption:'RIR 59 regimental history, printed p. 170: withdrawal to Świstelniki and the new line along the Narajówka.'}
+};
+const archivalTranslations = {
+  H:'Printed p. 147: “The front ran along the ridge between the Koropiec and the Strypa. The terrain in this region is strongly hilly and crossed by fairly deeply cut watercourses, which generally flow north to south toward the Dniester.”',
+  K:'Printed p. 166: “On 9 August I Battalion, together with a machine-gun platoon, marched by way of Monasterzyska to Korosziatyn… The battalion’s losses amounted to two officers and about 200 men.”',
+  N:'Printed pp. 169–170: “A divisional order arriving at 2 a.m. ordered the general withdrawal toward Świstelniki on the Narajówka… By the morning of 6 September the II and I Battalions had reached Świstelniki.”'
+};
+const candidateIdentityEvidencePackage = `
+  <p><strong>Candidate identity record:</strong> Jakob Schneider of Eyweiler, Kreis Zabern, Reserve-Infanterie-Regiment 59, listed as <em>verwundet</em> (wounded) on 11 September 1916.</p>
+  <svg class="scan-excerpt" viewBox="100 4265 1450 390" role="img" aria-label="German casualty list with Jakob Schneider of Eyweiler highlighted">
+    <image href="assets/casualty_list_14721_original.jpg" x="0" y="0" width="4259" height="6292" preserveAspectRatio="none"></image>
+    <rect x="200" y="4402" width="1350" height="76" fill="#ffe500" fill-opacity=".35" stroke="#d51f1f" stroke-width="10"></rect>
+    <path d="M 560 4330 L 270 4405" fill="none" stroke="#d51f1f" stroke-width="13"></path>
+    <path d="M 270 4405 L 326 4362 L 343 4428 Z" fill="#d51f1f"></path>
+    <rect x="570" y="4282" width="760" height="78" rx="12" fill="#c21f1f"></rect>
+    <text x="600" y="4337" fill="#fff" font-size="45" font-family="Arial, sans-serif" font-weight="700">Jakob Schneider — Eyweiler</text>
+  </svg>
+  <p class="source-note">The same native-coordinate highlight is used in every layer that cites this candidate identity.</p>
+  <p><a href="assets/casualty_list_14721_original.jpg" target="_blank">Full local scan</a> · <a href="https://files.genealogy.net/verlustlisten/14721.jpg" target="_blank" rel="noreferrer">archive original</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">CompGen record</a></p>`;
+const leadingWoundEvidencePackage = `
+    <p><strong>Indexed casualty-list fields:</strong><br>
+      Last name: Schneider<br>
+      First name: Jakob<br>
+      Place: Eyweiler, Zabern<br>
+      List: Preußen 630<br>
+      Regiment: Reserve-Infanterie-Regiment 59<br>
+      Status: <em>verwundet</em> (wounded)<br>
+      GOV place ID: EYWLERJN38NU
+    </p>
+    <svg class="scan-excerpt" viewBox="100 4265 1450 390" role="img" aria-label="Native-coordinate excerpt of German casualty list page 14721 with the Jakob Schneider entry highlighted">
+      <image href="assets/casualty_list_14721_original.jpg" x="0" y="0" width="4259" height="6292" preserveAspectRatio="none"></image>
+      <rect x="200" y="4402" width="1350" height="76" fill="#ffe500" fill-opacity=".35" stroke="#d51f1f" stroke-width="10"></rect>
+      <path d="M 560 4330 L 270 4405" fill="none" stroke="#d51f1f" stroke-width="13"></path>
+      <path d="M 270 4405 L 326 4362 L 343 4428 Z" fill="#d51f1f"></path>
+      <rect x="570" y="4282" width="760" height="78" rx="12" fill="#c21f1f"></rect>
+      <text x="600" y="4337" fill="#fff" font-size="45" font-family="Arial, sans-serif" font-weight="700">Jakob Schneider — Eyweiler</text>
+    </svg>
+    <p class="source-note">The archive indexes this record at native scan coordinate x=244, y=4440. The highlight uses those coordinates over the unaltered 4259×6292 image.</p>
+    <p><a href="assets/casualty_list_14721_original.jpg" target="_blank">Full local casualty-list scan</a> · <a href="https://files.genealogy.net/verlustlisten/14721.jpg" target="_blank" rel="noreferrer">archive original</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">indexed record</a> · <a href="https://gov.genealogy.net/item/show/EYWLERJN38NU" target="_blank" rel="noreferrer">GOV locality record</a></p>
+    <p><strong>Regimental context:</strong> RIR 59’s history reports that I Battalion was enveloped south of Horozanka on 31 August 1916, suffered almost 500 casualties, and temporarily ceased to have combat value.</p>
+    <details class="translation" open><summary>English translation of cited German passage</summary><p>Printed pp. 166–168: “On the evening of 30 August the battalion relieved Imperial and Royal Infantry Regiment No. 78 south of Horozanka… The losses were severe and amounted to almost 500 men… As a result, the battalion temporarily had no further combat value.”</p><p class="source-note"><a href="rir59_english_translations.md" target="_blank">Read the complete selected translation</a></p></details>
+    <a href="assets/rir59_1916_page_176.jpg" target="_blank"><img class="scan-excerpt" src="assets/rir59_1916_page_176.jpg" alt="RIR 59 regimental history, printed page 168, describing the nearly 500 casualties after the Horozanka action"></a>
+    <p class="source-note">RIR 59 regimental history, printed page 168. Click the page to enlarge it.</p>
+    <p><a href="assets/rir59_1916_page_174.jpg" target="_blank">Action begins, printed p. 166</a> · <a href="assets/rir59_1916_page_176.jpg" target="_blank">losses and withdrawal, printed p. 168</a> · <a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">complete regimental history</a></p>
+    <p class="confidence"><strong>Interpretation:</strong> leading hypothesis only. The list date is the publication date; Jakob’s battalion and injury date are not stated.</p>`;
+const archival = L.layerGroup();
+const archivalLine = L.polyline(archivalStops.map(s=>[s.lat,s.lon]), {
+  color:'#7c3f87', weight:4, opacity:.86, dashArray:'4 7'
+}).bindTooltip('Proposed RIR 59 / 1st Reserve Division route', {sticky:true}).addTo(archival);
+archivalStops.forEach(s => {
+  const archivalIcon = L.divIcon({className:'numbered-marker', html:`<div class="pin ${s.battle ? 'battle' : 'archive'}">${s.n}</div>`, iconSize:[29,29], iconAnchor:[14,14]});
+  const archivalVisual = archivalVisuals[s.n];
+  const archivalImage = s.n === 'A' ? candidateIdentityEvidencePackage : (archivalVisual ? `<a href="${archivalVisual.src}" target="_blank"><img class="scan-excerpt" src="${archivalVisual.src}" alt="Evidence image for ${s.name}"></a><p class="source-note">${archivalVisual.caption}${archivalVisual.page ? ` <a href="${archivalVisual.page}" target="_blank" rel="noreferrer">Source and rights</a>.` : ''}</p>` : '<p class="source-note"><strong>Image note:</strong> No sufficiently specific, rights-documented local photograph has yet been attached to this unit-level orientation point.</p>');
+  const archivalTranslation = archivalTranslations[s.n] ? `<details class="translation" open><summary>English translation of cited German passage</summary><p>${archivalTranslations[s.n]}</p><p class="source-note"><a href="rir59_english_translations.md" target="_blank">Read all translated excerpts</a></p></details>` : '';
+  const woundEvidence = `<h2>Horozanka — leading wound hypothesis</h2>
+    <p class="event-date"><strong>Starts:</strong> ${s.date}<br><span class="date-kind">${s.dateKind}</span></p>
+    <p>${s.evidence}</p>${leadingWoundEvidencePackage}`;
+  const standardEvidence = `<h2>${s.name}</h2><p class="event-date"><strong>Starts:</strong> ${s.date}<br><span class="date-kind">${s.dateKind}</span></p><p><strong>Evidence:</strong> ${s.evidence}</p>${archivalTranslation}${archivalImage}<p><strong>Supporting data:</strong> ${archivalSources[s.n]}</p><p class="confidence"><strong>Interpretation:</strong> archival candidate / unit-level reconstruction. A unit location does not prove Jakob personally stood here.</p>`;
+  const marker = L.marker([s.lat,s.lon], {icon:archivalIcon, zIndexOffset:1500})
+    .bindTooltip(`${s.n}. ${s.name} — ${s.date}`, {direction:'top', offset:[0,-10]})
+    .bindPopup(s.battle ? woundEvidence : standardEvidence, {maxWidth:500, minWidth:300})
+    .addTo(archival);
+  marker.on('click', () => playArchivalStop(s));
+});
+const archivalBounds = L.latLngBounds(archivalStops.map(s=>[s.lat,s.lon]));
+document.getElementById('show-candidate').addEventListener('click', () => {
+  [narratedRoute, synthesisRoute].forEach(layer => map.removeLayer(layer));
+  if (!map.hasLayer(archival)) map.addLayer(archival);
+  map.fitBounds(archivalBounds, {padding:[35,35]});
+});
+const narratedExtraSources = {
+  1:' · <a href="assets/casualty_list_14721_original.jpg" target="_blank">candidate casualty-list scan</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">CompGen index</a>',
+  2:' · <a href="https://dokumen.pub/beschreibung-der-stadt-straburg-und-des-mnsters-14-verb-u-verm-aufl-reprint-2019-9783111456157-9783111088761.html" target="_blank" rel="noreferrer">period city guide: Zur Walhalla, Johannesstaden 4</a> · <a href="https://archives.strasbourg.eu/ark:/39332/vtaef691ef6989f60d3/daogrp/0/1" target="_blank" rel="noreferrer">1914 Strasbourg address book</a>',
+  3:' · <a href="https://powiatszczycienskihistoria.blogspot.com/2026/03/infanterie-regiment-nr-59.html" target="_blank" rel="noreferrer">IR 59 garrison context used to assess Soldau</a>',
+  5:' · <a href="assets/first_reserve_division_history.html" target="_blank">1st Reserve Division theater context</a>',
+  6:' · <a href="assets/rir59_1916_page_154.jpg" target="_blank">RIR 59’s documented 1916 passage through Radziwilischki, printed p. 146</a> · <a href="rir59_english_translations.md" target="_blank">English translation</a>',
+  7:' · <a href="assets/rir59_1916_page_155.jpg" target="_blank">RIR 59 arrival and terrain, printed p. 147</a> · <a href="assets/rir59_1916_page_157.jpg" target="_blank">Monasterzyska, printed p. 149</a> · <a href="rir59_english_translations.md" target="_blank">English translations</a>',
+  9:' · <a href="https://echaprzeszlosci.pl/wp-content/uploads/2013/07/echa12.pdf" target="_blank" rel="noreferrer">Marienburg Catholic hospital history</a>',
+  13:' · <a href="https://dokumen.pub/beschreibung-der-stadt-straburg-und-des-mnsters-14-verb-u-verm-aufl-reprint-2019-9783111456157-9783111088761.html" target="_blank" rel="noreferrer">period listing for Zur Walhalla</a> · <a href="https://collections.musees.strasbourg.eu/fr/document/entre-des-troupes-franaises-strasbourg-le-22-novembre-1918/5ee338b7461cda28a3a900b0" target="_blank" rel="noreferrer">French troops on rue du Faubourg-National, 22 November 1918</a> · <a href="https://www.antoinewendling.eu/les-bombardements-de-strasbourg-en-1944/" target="_blank" rel="noreferrer">historical Walhalla location and postcard</a>',
+  14:' · <a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">manifest independently naming Paris as last residence</a>',
+  15:' · <a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">passenger manifest</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QS7-L9K7-PJMV?view=index&amp;personArk=%2Fark%3A%2F61903%2F1%3A1%3AJN3M-4Z8&amp;action=view&amp;lang=en" target="_blank" rel="noreferrer">FamilySearch record</a>',
+  16:' · <a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">passenger manifest</a>',
+  21:' · <a href="assets/familysearch_1950_west_belmar_census.pdf" target="_blank">1950 census</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QHJ-5QHW-L9Q4-1?view=index" target="_blank" rel="noreferrer">FamilySearch image</a>'
+};
+const narratedVisuals = {
+  3:{src:'assets/location_soldau_station_c1920.jpg', page:'https://commons.wikimedia.org/wiki/File:Bahnhof_Soldau_etwa_1920.jpg', caption:'Soldau railway station, about 1920. This illustrates the leading border-training candidate, not a confirmed narrated town.'},
+  6:{src:'assets/location_radviliskis_station_1930.jpg', page:'https://commons.wikimedia.org/wiki/File:Radviliskis_1930.jpg', caption:'Radviliškis railway station, 1930. Period-adjacent context for the phonetic place-name candidate; it does not identify Jacques’s estate.'},
+  7:{src:'assets/location_monastyryska_destruction_1917.jpg', page:'https://commons.wikimedia.org/wiki/File:Zerst%C3%B6rungen_in_MONASTERZYSKA.jpg', caption:'“Destruction in Monasterzyska,” 1917. Austro-Hungarian War Press Office / Austrian National Library; public domain. It closely illustrates Jacques’s damaged-town description but was taken about a year later.'}
+};
+const narratedTranslations = {
+  6:'Printed p. 146: “At Radziwilischki (Radviliškis) we turned sharply left and continued by way of Koschedary and Landwarowo to Grodno, where rations were issued.”',
+  7:archivalTranslations.H
+};
+const immigrationEvidencePackage = `<p><strong>Passenger manifest:</strong> Jacques Schneider, 26, single French waiter, sailed from Le Havre on the S.S. <em>La Lorraine</em> on 18 February 1922. Last residence: Paris; intended destination: Newark.</p>
+  <svg class="scan-excerpt" viewBox="120 555 760 100" role="img" aria-label="La Lorraine manifest with the complete Jacques Schneider row highlighted">
+    <image href="assets/la_lorraine_manifest_page.png" x="0" y="0" width="918" height="1191" preserveAspectRatio="none"></image>
+    <rect x="130" y="579" width="748" height="33" fill="#ffe500" fill-opacity=".34" stroke="#d51f1f" stroke-width="4"></rect>
+  </svg>
+  <p class="source-note">Highlighted: line 18, “SCHNEIDER, Jacques,” with the remainder of his row.</p>
+  <p><a href="assets/la_lorraine_manifest_page.png" target="_blank">Enlarge image</a> · <a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">original-image PDF</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QS7-L9K7-PJMV?view=index&amp;personArk=%2Fark%3A%2F61903%2F1%3A1%3AJN3M-4Z8&amp;action=view&amp;lang=en" target="_blank" rel="noreferrer">FamilySearch</a></p>`;
+const censusEvidencePackage = `<p><strong>1950 census:</strong> West Belmar, Monmouth County, ED 13-261, sheet 13, dwelling 135. Jacques (54, France, bartender), wife Justine (48), and son Harry (25). Apparent house number: 927.</p>
+  <svg class="scan-excerpt" viewBox="120 1250 1340 245" role="img" aria-label="1950 West Belmar census with Jacques Schneider, Justine, and Harry highlighted">
+    <image href="assets/west_belmar_1950_census_page.png" x="0" y="0" width="1530" height="1980" preserveAspectRatio="none"></image>
+    <rect x="120" y="1280" width="1340" height="119" fill="#ffe500" fill-opacity=".30" stroke="#d51f1f" stroke-width="6"></rect>
+  </svg>
+  <p class="source-note">Highlighted: Jacques Schneider and the continuing household entries for Justine and Harry.</p>
+  <p><a href="assets/west_belmar_1950_census_page.png" target="_blank">Enlarge image</a> · <a href="assets/familysearch_1950_west_belmar_census.pdf" target="_blank">original-image PDF</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QHJ-5QHW-L9Q4-1?view=index" target="_blank" rel="noreferrer">FamilySearch</a></p>`;
+for (const [phase, items] of Object.entries(phases)) {
+  const group = L.layerGroup().addTo(narratedRoute);
+  const coordinates = items.map(s => [s.lat, s.lon]);
+  L.polyline(coordinates, {color:'#b44d31', weight:3, opacity:.78, dashArray:'8 7'}).addTo(group);
+  items.forEach(s => {
+    if (phase === 'Postwar and migration' && s.n === 12) return;
+    const immigrationRecord = (s.n === 15 || s.n === 16) ? immigrationEvidencePackage : '';
+    const censusRecord = s.n === 21 ? censusEvidencePackage : '';
+    const narratedVisual = narratedVisuals[s.n];
+    const narratedImage = narratedVisual ? `<a href="${narratedVisual.src}" target="_blank"><img class="scan-excerpt" src="${narratedVisual.src}" alt="Historical view associated with ${s.name}"></a><p class="source-note">${narratedVisual.caption} <a href="${narratedVisual.page}" target="_blank" rel="noreferrer">Source and rights</a>.</p>` : '';
+    const narratedTranslation = narratedTranslations[s.n] ? `<details class="translation" open><summary>English translation of cited German passage</summary><p>${narratedTranslations[s.n]}</p><p class="source-note"><a href="rir59_english_translations.md" target="_blank">Read all translated excerpts</a></p></details>` : '';
+    const identityEvidence = s.n === 1 ? candidateIdentityEvidencePackage : '';
+    const narratedSources = `<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited oral-history transcript</a>${narratedExtraSources[s.n] || ''}`;
+    const linkedRecords = immigrationRecord + censusRecord;
+    const marker = L.marker([s.lat,s.lon], {icon:icon(s), zIndexOffset:1000+s.n})
+      .bindTooltip(`${s.n}. ${s.name} — ${s.date}`, {direction:'top', offset:[0,-10]})
+      .bindPopup(`<h2>${s.n}. ${s.name}</h2><p class="event-date"><strong>Starts:</strong> ${s.date}<br><span class="date-kind">${s.dateKind}</span></p><p><strong>Evidence:</strong> ${s.evidence}</p>${identityEvidence}${narratedTranslation}${narratedImage}${linkedRecords}<p><strong>Supporting data:</strong> ${narratedSources}</p><p class="confidence"><strong>Confidence:</strong> ${s.confidence}</p>`, {maxWidth:520, minWidth:310})
+      .addTo(group);
+    marker.on('click', () => playNarratedStop(s));
+    markerByStop[s.n] = marker;
+  });
+}
+
+// Path 3 is an explicit synthesis. It joins the transcript to named records
+// and unit history, while labeling every interpretive step rather than
+// presenting the reconstruction as a witnessed itinerary.
+const synthesisStops = [
+  {n:'S1', name:'Eywiller / Eyweiler', lat:48.872, lon:7.126, date:'Before service, probably 1915', basis:'Narrated + archival match', confidence:'Strong candidate', support:'The casualty list names Jakob Schneider of Eyweiler. The transcript’s uncertain home-place sound and the confirmed Jacques/Jakob identity support, but do not independently prove, the match.', sources:'<a href="assets/casualty_list_14721_original.jpg" target="_blank">casualty-list scan</a> · <a href="https://des.genealogy.net/search/show/4575988" target="_blank" rel="noreferrer">CompGen index</a>'},
+  {n:'S2', name:'Strasbourg induction and prewar employment', lat:48.573, lon:7.752, date:'Probably May 1915', basis:'Narrated + historical restaurant candidate', confidence:'High for place; strong but unproven restaurant match', support:'Jacques repeatedly says he went to Strasbourg for induction and had worked at a restaurant transcribed as “Resto Wallander.” Restaurant Zur Walhalla at Johannesstaden 4 is the strongest phonetic and contextual match: it was a recognized restaurant near the railway station. The year and the employer identification remain inferred.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a> · <a href="https://dokumen.pub/beschreibung-der-stadt-straburg-und-des-mnsters-14-verb-u-verm-aufl-reprint-2019-9783111456157-9783111088761.html" target="_blank" rel="noreferrer">period city guide</a> · <a href="https://archives.strasbourg.eu/ark:/39332/vtaef691ef6989f60d3/daogrp/0/1" target="_blank" rel="noreferrer">1914 address book</a>'},
+  {n:'S3', name:'Działdowo / Soldau — leading training candidate', lat:53.2396, lon:20.1800, date:'Probably May–October 1915', basis:'Narrated border location + IR 59 garrison geography', confidence:'Moderate; depot not proven', support:'Jacques places his training on the German–Polish border and says the later train reached Tilsit overnight. Soldau stood directly on the prewar frontier, housed IR 59’s III Battalion, and lay on the East Prussian border railway toward Tilsit. Deutsch Eylau and Graudenz remain alternatives and are marked separately.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a> · <a href="https://powiatszczycienskihistoria.blogspot.com/2026/03/infanterie-regiment-nr-59.html" target="_blank" rel="noreferrer">IR 59 garrison evidence</a> · <a href="https://krigsvidenskab.dk/emne/felttoget-i-ostprojsen-i-august-1914" target="_blank" rel="noreferrer">East Prussian railway description</a>', photo:'assets/location_soldau_station_c1920.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:Bahnhof_Soldau_etwa_1920.jpg', photoCaption:'Soldau railway station, about 1920. Period-adjacent view; it does not prove this was Jacques’s departure station. Wikimedia Commons.'},
+  {n:'S4', name:'Tilsit (Sovetsk)', lat:55.083, lon:21.883, date:'Probably October 1915', basis:'Narrated + compatible unit theater', confidence:'High for place', support:'Both mobilization tellings name Tilsit and a two-day stay. RIR 59’s eastern service makes the movement geographically compatible.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a> · <a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">RIR 59 history</a>'},
+  {n:'S4a', name:'Radviliškis / Radziwilischki — spoken-name candidate', lat:55.811, lon:23.546, date:'Late 1915 hypothesis', basis:'Phonetic place-name inference + compatible unit geography', confidence:'Moderate for name; low for exact estate', support:'The transcribed “Ratsievilevitskiewicz” closely resembles the German Radziwilischki. Jacques describes a large estate with officers, artillery and horses outside the settlement. RIR 59’s later 1916 transfer is independently documented through Radziwilischki, proving the place belonged to the regiment’s eastern transport geography, though not that this was Jacques’s 1915 estate.', translation:'Printed p. 146: “At Radziwilischki (Radviliškis) we turned sharply left and continued by way of Koschedary and Landwarowo to Grodno, where rations were issued.”', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">spoken-name passage</a> · <a href="assets/rir59_1916_page_154.jpg" target="_blank">RIR 59 history, p. 146</a>', photo:'assets/location_radviliskis_station_1930.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:Radviliskis_1930.jpg', photoCaption:'Radviliškis railway station in 1930, showing the interwar station environment. Anonymous historical photograph via Wikimedia Commons.'},
+  {n:'S5', name:'Lithuania–Dünaburg winter sector', lat:55.75, lon:25.60, date:'Late 1915–June 1916', basis:'Narrated region + unit history', confidence:'Medium at theater level', support:'Jacques recalls boat, narrow-gauge/open rail, marches, farms and winter trenches in unnamed Russian territory. RIR 59’s Lithuania and Dünaburg chapters supply a compatible theater, not a precise personal position.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a> · <a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">RIR 59 history</a>'},
+  {n:'S5a', name:'Litwinów–Bożyków unloading station', lat:49.30983, lon:25.00639, date:'About 4–5 July 1916', basis:'Documented unit railhead + matching narrated journey', confidence:'High for RIR 59; moderate personally', support:'Jacques recalls a multiday boxcar journey into Galicia followed by unloading at a station outside town. The regimental history gives the route through Lemberg and Stryj and names Bożyków and Litwinów as RIR 59’s unloading stations on the fourth day.', translation:'Printed pp. 146–147: “We passed through Lemberg, the capital of Galicia. By way of Stryj, on the fourth day of our journey we reached our destination, the unloading stations of Bożyków and Litwinów. German officers received us and quartered us in the various small settlements nearby.”', sources:'<a href="assets/rir59_1916_page_154.jpg" target="_blank">rail itinerary, p. 146</a> · <a href="assets/rir59_1916_page_155.jpg" target="_blank">arrival and railheads, p. 147</a> · <a href="https://www.atlaskolejowy.net/ua/tarnopolski/?id=baza&amp;poz=29196" target="_blank" rel="noreferrer">station history and coordinates</a> · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">oral account</a>', photoNote:'No verified photograph of Litwinów–Bożyków station has been located. The station database reports that the building was demolished and the track removed; the regimental pages are shown as the surviving visual evidence.'},
+  {n:'S5b', name:'Monasterzyska — probable damaged hill town', lat:49.08889, lon:25.16944, date:'Night of 5–6 July 1916', basis:'Landscape description matched to unit chronology', confidence:'Moderate–high', support:'Jacques describes an uphill march to a well-kept but half-destroyed village, sleeping outside it, and moving toward the front the next day. The unit history records a roughly 50 km march across the Złota Lipa–Koropiec ridge and says the regiment’s first elements entered burning Monasterzyska during the night.', translation:'Printed pp. 148–149: “The distance was about fifty kilometres… on a narrow road, the ridge between the Złota Lipa and the Koropiec had to be crossed. During the night the first elements of our regiment arrived in burning Monasterzyska.”', sources:'<a href="assets/rir59_1916_page_156.jpg" target="_blank">50 km ridge march, p. 148</a> · <a href="assets/rir59_1916_page_157.jpg" target="_blank">burning Monasterzyska, p. 149</a> · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">damaged hill-village passage</a>', photo:'assets/location_monastyryska_destruction_1917.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:Zerst%C3%B6rungen_in_MONASTERZYSKA.jpg', photoCaption:'“Destruction in Monasterzyska,” photographed in 1917 by the Austro-Hungarian War Press Office photographic unit. Austrian National Library; public domain. This is direct wartime evidence of the damaged town, although it was taken about a year after RIR 59 arrived.'},
+  {n:'S6', name:'Strypa–Zlota Lipa sector', lat:49.45, lon:24.72, date:'5 July–30 August 1916', basis:'Narrated Galicia + documented unit route', confidence:'High at theater level', support:'Jacques names Galicia and the Brusilov Offensive. The regimental history places RIR 59 at the Strypa, Baryszka, Koropiec and Zlota Lipa during this period.', sources:'<a href="https://www.leo-bw.de/fr/web/guest/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%2BGeschichte%2Bdes%2BReserve-Infanterie-Regiments%2BNr%2B59%2Bim%2BWeltkriege%2B1914%2B-%2B1918%2Bnach%2Bamtlichen%2BUnterlagen%2Bund%2BBerichten%2B" target="_blank" rel="noreferrer">complete RIR 59 history</a>'},
+  {n:'S6a', name:'Hrehorów–Olesza — probable early Galician combat sector', lat:49.09806, lon:25.21556, date:'7–13 July 1916', basis:'Narrated terrain + documented unit fighting', confidence:'High for unit; moderate personally', support:'The beet and corn fields, woods, trenches, nearby villages and protective ridges in Jacques’s account fit the unit history’s fighting around Monasterzyska, Hrehorów and Olesza. This marker represents an earlier combat episode and is not treated as the later wound location.', translation:'Printed pp. 149–151: “On 12 July the expected attack by strong Russian forces began against the front between the villages of Olesza and Hrehorów… Olesza and the Austrian position north of it had meanwhile been lost, but the village and the position were retaken with strong artillery support.”', sources:'<a href="assets/rir59_1916_page_157.jpg" target="_blank">positions, p. 149</a> · <a href="assets/rir59_1916_page_158.jpg" target="_blank">12 July fighting, p. 150</a> · <a href="assets/rir59_1916_page_159.jpg" target="_blank">continued fighting, p. 151</a> · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">terrain and trench account</a>', photo:'assets/location_hryhoriv_chapel_modern.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:%D0%9A%D0%B0%D0%BF%D0%BB%D0%B8%D1%87%D0%BA%D0%B0_%D0%BD%D0%B0_%D0%BE%D0%BA%D0%BE%D0%BB%D0%B8%D1%86%D1%96_%D1%81%D0%B5%D0%BB%D0%B0_%D0%93%D1%80%D0%B8%D0%B3%D0%BE%D1%80%D1%96%D0%B2.jpg', photoCaption:'Modern roadside chapel on the outskirts of Hryhoriv/Hrehorów. It locates the village but is not a WWI battlefield photograph. Wikimedia Commons.'},
+  {n:'S7', name:'Horozanka — leading wound hypothesis', lat:49.14361, lon:24.91694, date:'31 August 1916 hypothesis', basis:'Casualty notice + unit loss event + oral wound', confidence:'Moderate; not proven', support:'I Battalion lost nearly 500 men south of Horozanka. This occurred eleven days before the published wounded notice. The list does not state Jakob’s battalion or wound date, so the connection remains inferential.', translation:'Printed pp. 166–168: “On the evening of 30 August the battalion relieved Imperial and Royal Infantry Regiment No. 78 south of Horozanka… The losses were severe and amounted to almost 500 men… As a result, the battalion temporarily had no further combat value.”', sources:'<a href="assets/rir59_1916_page_174.jpg" target="_blank">action, p. 166</a> · <a href="assets/rir59_1916_page_176.jpg" target="_blank">losses, p. 168</a> · <a href="assets/casualty_list_14721_original.jpg" target="_blank">Jakob casualty notice</a>'},
+  {n:'S8', name:'Narajowka — alternate wound window', lat:49.30, lon:24.88, date:'Night of 5–6 September 1916', basis:'Oral detail + documented unit withdrawal', confidence:'Plausible alternate', support:'Jacques says he was wounded at night while lying in an apple orchard. RIR 59 withdrew at night toward Swistelniti and the Narajowka, making this chronologically and descriptively plausible, but it leaves little reporting time before 11 September.', translation:'Printed pp. 169–170: “A divisional order arriving at 2 a.m. ordered the general withdrawal toward Świstelniki on the Narajówka… Disengagement from the enemy took place during the night without interference. By the morning of 6 September the II and I Battalions had reached Świstelniki.”', sources:'<a href="assets/rir59_1916_page_177.jpg" target="_blank">withdrawal, p. 169</a> · <a href="assets/rir59_1916_page_178.jpg" target="_blank">new line, p. 170</a>'},
+  {n:'S9', name:'Front-line hospital, eastern Galicia', lat:49.35, lon:24.55, date:'After wound, 1916', basis:'Narrated; location unknown', confidence:'Low for coordinates', support:'Jacques describes two days in an initial hospital before rail evacuation. No facility is named; this remains a regional placeholder and is not positioned at the likely railhead shown separately.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S10', name:'Silesia hospital / recovery area', lat:51.00, lon:17.00, date:'After evacuation; date uncertain', basis:'Narrated region', confidence:'Medium for region', support:'He identifies Silesia in the recovery sequence but gives no town or hospital. The straight segment is only an inferred transfer.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S11', name:'Marienburg hospital (Malbork)', lat:54.04, lon:19.03, date:'1916–1917, uncertain', basis:'Narrated name + historical hospital match', confidence:'Medium', support:'Jacques names Marienburg and Catholic sisters. Malbork’s Catholic St. Mary’s Hospital was staffed by Sisters of St. Vincent de Paul through WWI; no patient register yet connects him personally.', sources:'<a href="https://echaprzeszlosci.pl/wp-content/uploads/2013/07/echa12.pdf" target="_blank" rel="noreferrer">hospital history</a> · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S12', name:'Königsberg departure area', lat:54.71, lon:20.51, date:'November 1918', basis:'Narrated; namesake inferred', confidence:'Medium', support:'He says his homeward train ran from Königsberg to Strasbourg. East Prussian Königsberg fits the recovery geography, though the transcript does not disambiguate the name.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S13', name:'Berlin', lat:52.520, lon:13.405, date:'November 1918', basis:'Narrated', confidence:'High', support:'Explicitly named layover on the demobilization journey.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S14', name:'Wiesbaden', lat:50.08, lon:8.24, date:'November 1918', basis:'Narrated', confidence:'High', support:'Explicitly named layover before Jacques found a train to Strasbourg.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S15', name:'Strasbourg / probable Zur Walhalla employment', lat:48.584, lon:7.768, date:'November 1918', basis:'Narrated + historical restaurant and parade geography', confidence:'High for Strasbourg; strong but unproven restaurant match', support:'He describes reaching Strasbourg, going briefly home, and returning to his prewar employer. The likely restaurant, Zur Walhalla, stood at Johannesstaden 4 near the station. The documented 22 November French parade passed along nearby rue du Faubourg-National, strongly fitting his recollection of a restaurant packed with French soldiers, although no staff list yet names Jacques.', sources:'<a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a> · <a href="https://dokumen.pub/beschreibung-der-stadt-straburg-und-des-mnsters-14-verb-u-verm-aufl-reprint-2019-9783111456157-9783111088761.html" target="_blank" rel="noreferrer">Zur Walhalla period listing</a> · <a href="https://collections.musees.strasbourg.eu/fr/document/entre-des-troupes-franaises-strasbourg-le-22-novembre-1918/5ee338b7461cda28a3a900b0" target="_blank" rel="noreferrer">22 November 1918 parade photograph and location</a> · <a href="https://www.antoinewendling.eu/les-bombardements-de-strasbourg-en-1944/" target="_blank" rel="noreferrer">Walhalla location and postcard</a>'},
+  {n:'S16', name:'Paris', lat:48.857, lon:2.352, date:'After 1918–February 1922', basis:'Narrated + passenger manifest', confidence:'High', support:'The oral history describes hotel work in Paris; the passenger manifest independently lists Paris as his last residence.', sources:'<a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">passenger manifest</a>'},
+  {n:'S17', name:'Le Havre — S.S. La Lorraine', lat:49.494, lon:0.107, date:'18 February 1922', basis:'Documented', confidence:'High', support:'The manifest identifies Jacques Schneider, age 26, a waiter, sailing from Le Havre aboard the S.S. La Lorraine.', sources:'<a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">original manifest</a> · <a href="https://www.familysearch.org/ark:/61903/3:1:3QS7-L9K7-PJMV?view=index&amp;personArk=%2Fark%3A%2F61903%2F1%3A1%3AJN3M-4Z8&amp;action=view&amp;lang=en" target="_blank" rel="noreferrer">FamilySearch record</a>'},
+  {n:'S18', name:'Manhattan arrival and East 49th Street', lat:40.755, lon:-73.970, date:'Late February 1922', basis:'Manifest port + narrated first address', confidence:'High for Manhattan; pier unknown', support:'The ship arrived at the Port of New York, while Jacques recalls taking a taxi to East 49th Street. No cited sheet establishes the exact landing pier.', sources:'<a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">passenger manifest</a> · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a>'},
+  {n:'S19', name:'Newark intended destination / relatives', lat:40.735, lon:-74.172, date:'1922 and later visits', basis:'Manifest + narrated visits', confidence:'High for city', support:'The manifest states Newark as the intended final destination; Jacques separately remembers visiting relatives there. It need not have been his first actual stop.', sources:'<a href="assets/familysearch_1922_la_lorraine_manifest.pdf" target="_blank">passenger manifest</a>'},
+  {n:'S20', name:'West Belmar', lat:40.178, lon:-74.018, date:'By 1950', basis:'Narrated + census', confidence:'High', support:'The oral history identifies the family’s Curtis Avenue home, and the 1950 census independently places Jacques, Justine and Harry in West Belmar.', sources:'<a href="assets/familysearch_1950_west_belmar_census.pdf" target="_blank">1950 census</a>'}
+];
+const synthesisRoute = L.layerGroup();
+L.polyline(synthesisStops.map(s=>[s.lat,s.lon]), {
+  color:'#a56a00', weight:5, opacity:.9, dashArray:'12 6'
+}).bindTooltip('Combined narrated + archival synthesis', {sticky:true}).addTo(synthesisRoute);
+synthesisStops.forEach(s => {
+  const synthesisIcon = L.divIcon({className:'numbered-marker', html:`<div class="pin synthesis">${s.n.replace('S','')}</div>`, iconSize:[29,29], iconAnchor:[14,14]});
+  const sharedVisual = s.n === 'S6' ? archivalVisuals.H : (s.n === 'S8' ? archivalVisuals.N : null);
+  const placePhoto = s.photo ? `<a href="${s.photo}" target="_blank"><img class="scan-excerpt" src="${s.photo}" alt="${s.name}"></a><p class="source-note">${s.photoCaption} <a href="${s.photoPage}" target="_blank" rel="noreferrer">Source and license</a>.</p>` : (sharedVisual ? `<a href="${sharedVisual.src}" target="_blank"><img class="scan-excerpt" src="${sharedVisual.src}" alt="Evidence image for ${s.name}"></a><p class="source-note">${sharedVisual.caption}${sharedVisual.page ? ` <a href="${sharedVisual.page}" target="_blank" rel="noreferrer">Source and rights</a>.` : ''}</p>` : (s.photoNote ? `<p class="notice"><strong>Photograph:</strong> ${s.photoNote}</p>` : ''));
+  const translatedPassage = s.translation || (s.n === 'S6' ? archivalTranslations.H : '');
+  const englishTranslation = translatedPassage && s.n !== 'S7' ? `<details class="translation" open><summary>English translation of cited German passage</summary><p>${translatedPassage}</p><p class="source-note"><a href="rir59_english_translations.md" target="_blank">Read all translated excerpts</a></p></details>` : '';
+  const sharedEvidence = s.n === 'S7' ? leadingWoundEvidencePackage : (s.n === 'S1' ? candidateIdentityEvidencePackage : '');
+  const sharedRecords = (s.n === 'S17' || s.n === 'S18') ? immigrationEvidencePackage : (s.n === 'S20' ? censusEvidencePackage : '');
+  const marker = L.marker([s.lat,s.lon], {icon:synthesisIcon, zIndexOffset:1700})
+    .bindTooltip(`${s.n}. ${s.name} — ${s.date}`, {direction:'top', offset:[0,-10]})
+    .bindPopup(`<h2>${s.n}. ${s.name}</h2><p class="event-date"><strong>${s.date}</strong><br><span class="date-kind">${s.basis}</span></p><p>${s.support}</p>${sharedEvidence}${englishTranslation}${placePhoto}${sharedRecords}<p><strong>Supporting data:</strong> ${s.sources}</p><p class="confidence"><strong>Confidence:</strong> ${s.confidence}</p>`, {maxWidth:520, minWidth:320})
+    .addTo(synthesisRoute);
+  marker.on('click', () => playSynthesisStop(s));
+});
+const synthesisBounds = L.latLngBounds(synthesisStops.map(s=>[s.lat,s.lon]));
+
+const timeline = document.getElementById('journey-timeline');
+timeline.insertAdjacentHTML('beforeend', '<li><strong>16 July 1895 — Birth</strong><br><span class="date-kind">Confirmed date; birthplace not yet established by the cited death entry.</span></li>');
+stops.forEach(s => {
+  const li = document.createElement('li');
+  li.innerHTML = `<button type="button">${s.n}. ${s.name}</button><br><strong>${s.date}</strong><br><span class="date-kind">${s.dateKind}</span>`;
+  li.querySelector('button').addEventListener('click', () => {
+    [archival, synthesisRoute].forEach(layer => map.removeLayer(layer));
+    if (!map.hasLayer(narratedRoute)) map.addLayer(narratedRoute);
+    map.setView([s.lat, s.lon], s.n >= 16 ? 13 : 7);
+    markerByStop[s.n]?.openPopup();
+  });
+  timeline.appendChild(li);
+});
+timeline.insertAdjacentHTML('beforeend', '<li><strong>21 February 2002 — Death, age 106</strong><br><span class="date-kind">Confirmed by family identification; no death place supplied by the cited entry.</span></li>');
+
+// Simplified theater-scale fronts reconstructed from the USMA/West Point WWI
+// campaign atlas. They are orientation aids, not trench-level GIS data.
+function frontLayer(name, coordinates, color, description) {
+  const group = L.layerGroup().addTo(map);
+  L.polyline(coordinates, {color, weight:5, opacity:.78, lineCap:'round'})
+    .bindTooltip(name, {sticky:true})
+    .bindPopup(`<h2>${name}</h2><p>${description}</p><p class="confidence"><strong>Precision:</strong> simplified theater-scale reconstruction.</p>`)
+    .addTo(group);
+  return group;
+}
+overlays['Front — Western, 1915–16'] = frontLayer(
+  'Stabilized Western Front, 1915–16',
+  [[51.15,2.72],[50.86,2.88],[50.63,2.88],[50.29,2.78],[50.05,2.68],[49.70,3.02],[49.42,3.65],[49.25,4.03],[49.16,5.38],[48.88,5.70],[48.70,6.18],[48.28,7.06],[47.55,7.55]],
+  '#2867a8',
+  'Approximate stabilized line from the Belgian coast through northern and eastern France to the Swiss frontier.'
+);
+overlays['Front — Eastern, March 1916'] = frontLayer(
+  'Eastern Front, March 1916',
+  [[57.05,24.10],[56.30,25.25],[55.87,26.53],[54.83,26.75],[53.45,26.25],[52.10,25.55],[51.20,25.40],[50.35,25.55],[49.55,25.60],[48.75,25.80],[47.95,25.20]],
+  '#7a3f98',
+  'Approximate front before the Brusilov Offensive, running from the Gulf of Riga through present-day Latvia, Belarus, Ukraine, and Bukovina.'
+);
+overlays['Front — Brusilov maximum, Sept. 1916'] = frontLayer(
+  'Brusilov Offensive: approximate maximum Russian advance, September 1916',
+  [[51.30,25.10],[50.95,24.35],[50.75,23.95],[50.10,24.15],[49.45,24.35],[48.90,24.40],[48.30,24.95],[47.95,25.10]],
+  '#cf2f43',
+  'Approximate maximum advance in the southwestern sector. Jacques places his Galician service and wound during this offensive, but does not identify his battlefield.'
+);
+overlays['Front — Italian, 1915–17'] = frontLayer(
+  'Italian Front, 1915–17',
+  [[46.65,10.55],[46.45,11.35],[46.55,12.30],[46.60,13.10],[46.25,13.55],[45.95,13.62],[45.72,13.60]],
+  '#3b8b62',
+  'Approximate Alpine and Isonzo front. Included for European context; Jacques does not describe serving here.'
+);
+
+// The railway itself is historically documented; Jacques's use of this exact
+// sequence is a reconstruction. Keeping it as a separate overlay prevents the
+// inferred transport corridor from being mistaken for a narrated location.
+const evacuationRail = L.layerGroup().addTo(map);
+const evacuationRailStops = [
+  {name:'Świstelniki / Svitanok — likely rail-loading point', lat:49.2940, lon:24.7994},
+  {name:'Halych', lat:49.121, lon:24.728},
+  {name:'Lviv / Lemberg', lat:49.840, lon:24.030},
+  {name:'Przemyśl', lat:49.783, lon:22.767},
+  {name:'Rzeszów', lat:50.041, lon:21.999},
+  {name:'Tarnów', lat:50.013, lon:20.986},
+  {name:'Kraków / Krakau', lat:50.065, lon:19.945},
+  {name:'Trzebinia', lat:50.159, lon:19.469},
+  {name:'Mysłowice / Myslowitz — Upper Silesia', lat:50.242, lon:19.139},
+  {name:'Katowice / Kattowitz — Upper Silesia', lat:50.265, lon:19.024},
+  {name:'Gliwice / Gleiwitz', lat:50.295, lon:18.671},
+  {name:'Kędzierzyn-Koźle / Cosel', lat:50.350, lon:18.226},
+  {name:'Opole / Oppeln', lat:50.675, lon:17.921},
+  {name:'Wrocław / Breslau — regional endpoint hypothesis', lat:51.108, lon:17.039}
+];
+L.polyline(evacuationRailStops.map(s => [s.lat, s.lon]), {
+  color:'#087f8c', weight:7, opacity:.9, lineCap:'round', lineJoin:'round'
+}).bindTooltip('Likely 1916 evacuation railway via Silesia — inferred personal route', {sticky:true})
+  .bindPopup(`<h2>Likely evacuation railway through Silesia</h2><p>This highlighted corridor follows established pre-1914 railways from the Narajówka sector through Lemberg, Przemyśl and Krakau into Upper Silesia, continuing toward Breslau.</p><p><strong>Supporting data:</strong> <a href="https://tandf.figshare.com/articles/dataset/Railway_network_of_Galicia_and_Austrian_Silesia_1847-1914_/12417533" target="_blank" rel="noreferrer">historical Galicia and Austrian Silesia railway GIS</a> · <a href="https://www.agad.gov.pl/KOLEJE/mapy.html" target="_blank" rel="noreferrer">AGAD historical railway maps</a></p><p class="confidence"><strong>Confidence:</strong> High that the corridor existed; low that Jacques used every segment shown. His Silesian hospital remains unidentified.</p>`, {maxWidth:500})
+  .addTo(evacuationRail);
+const railIcon = L.divIcon({className:'numbered-marker', html:'<div class="pin rail">🚂</div>', iconSize:[31,31], iconAnchor:[15,15]});
+L.marker([49.2940,24.7994], {icon:railIcon, zIndexOffset:1900})
+  .bindTooltip('Likely train evacuation point — Świstelniki / Svitanok', {direction:'top', offset:[0,-11]})
+  .bindPopup(`<h2>Likely train evacuation point</h2><p class="event-date"><strong>After wound, late August or early September 1916</strong><br><span class="date-kind">Railhead inferred from unit position and historical railway geography</span></p><p>Świstelniki (modern Svitanok) lay on the Halych–Pidvysoke railway and near the Narajówka line to which RIR 59 withdrew on 5–7 September. It is therefore a plausible casualty collection or train-loading point.</p><p>This marker does <strong>not</strong> locate Jacques's first hospital. He may have been moved there by road after two days at an unnamed field hospital.</p><p><strong>Supporting data:</strong> <a href="assets/rir59_1916_page_177.jpg" target="_blank">RIR 59 withdrawal, p. 169</a> · <a href="assets/rir59_1916_page_178.jpg" target="_blank">Narajówka line, p. 170</a> · <a href="https://tandf.figshare.com/articles/dataset/Railway_network_of_Galicia_and_Austrian_Silesia_1847-1914_/12417533" target="_blank" rel="noreferrer">historical railway GIS</a> · <a href="https://maps.visicom.ua/i/STL1NOXGO" target="_blank" rel="noreferrer">modern location reference</a></p><p class="confidence"><strong>Confidence:</strong> Low–moderate; plausible railhead, no personal transport record found.</p>`, {maxWidth:520, minWidth:330})
+  .addTo(evacuationRail);
+evacuationRailStops.slice(1).forEach(s => {
+  L.circleMarker([s.lat,s.lon], {radius:4, color:'#fff', weight:1.5, fillColor:'#087f8c', fillOpacity:1})
+    .bindTooltip(s.name, {direction:'top'})
+    .addTo(evacuationRail);
+});
+overlays['Rail — likely evacuation via Silesia'] = evacuationRail;
+
+// THEORETICAL reconstruction of Jacques's October 1915 movement after Tilsit.
+// None of these segments is documented by an individual transport record.
+const theoreticalNarrowGauge = L.layerGroup();
+const memelRiverHypothesis = [
+  [55.083,21.883], // Tilsit
+  [55.078,22.765], // Jurbarkas / Georgenburg reach
+  [55.035,23.575], // lower-middle Nemunas reach
+  [54.899,23.886]  // Kovno / Kaunas landing area
+];
+const kaunasFieldRailHypothesis = [
+  [54.899,23.886], // river landing / Old Town area
+  [54.915,23.879], // Vilijampolė
+  [54.944,23.922], // Kleboniškis
+  [54.970,23.920]  // Domeikava / northern fortress edge
+];
+const marchToFrontHypothesis = [
+  [54.970,23.920],
+  [55.250,24.750], // Ukmergė corridor
+  [55.500,25.600], // Utena corridor
+  [55.730,26.250],
+  [55.875,26.535]  // Dünaburg / Daugavpils sector
+];
+L.polyline(memelRiverHypothesis, {color:'#1776a8', weight:6, opacity:.83, dashArray:'14 9'})
+  .bindTooltip('THEORETICAL: Tilsit–Kovno river voyage', {sticky:true})
+  .bindPopup(`<h2>Theoretical Memel/Nemunas river voyage</h2><p>Jacques says that after two days in Tilsit he boarded a vessel described in one telling as “the Mamel,” traveled overnight, and entered Russian territory. This may mean a voyage upstream on the <strong>Memel</strong>—the German name for the Nemunas—toward Kovno/Kaunas.</p><p class="notice"><strong>Theoretical reconstruction:</strong> no passenger list, movement order, vessel name or landing record has been found. The drawn river line is a geographic hypothesis, not a documented personal track.</p><p><strong>Supporting data:</strong> <a href="../transcripts/chronological_edited_transcript.md" target="_blank">oral-history transcript, Tilsit and boat passages</a> · <a href="https://tilsit-stadtundland.de/wp-content/uploads/2019/12/TR-14_r.pdf" target="_blank" rel="noreferrer">historical Tilsit–Kovno Memel navigation context</a></p><p class="confidence"><strong>Confidence:</strong> moderate for the river interpretation; low–moderate for Kovno as the endpoint.</p>`, {maxWidth:520, minWidth:320})
+  .addTo(theoreticalNarrowGauge);
+L.polyline(kaunasFieldRailHypothesis, {color:'#d97706', weight:7, opacity:.9, dashArray:'3 8'})
+  .bindTooltip('THEORETICAL: possible Kovno fortress narrow-gauge segment', {sticky:true})
+  .bindPopup(`<h2>Theoretical Kovno/Kaunas narrow-gauge segment</h2><p>Kaunas possessed a developed Russian fortress railway using portable 600- and 750-mm track. By 1915 its network reached Aleksotas, Freda, Aukštoji Panemunė, Petrašiūnai, Kleboniškis, Lentainiai, Domeikava, Šilainiai and other fortress locations; German forces subsequently extended or reused portions.</p><p>The line shown is a <strong>representative northern exit through documented network localities</strong>, selected because it is compatible with an onward march toward the Dünaburg front. It is not a recovered train itinerary.</p><p class="notice"><strong>Theoretical reconstruction:</strong> Jacques never names Kovno, a station, a branch or a gauge. The exact rail segment could have been elsewhere in occupied Lithuania.</p><p><strong>Supporting data:</strong> <a href="https://virtualiosparodos.azuolynobiblioteka.lt/index.php/category/2535" target="_blank" rel="noreferrer">Kaunas regional library: fortress narrow-gauge history</a> · <a href="https://igrek.amzp.pl/details.php?id=11793065" target="_blank" rel="noreferrer">German 1915 Kovno map record</a> · <a href="https://journals.vilniustech.lt/index.php/GAC/article/download/4739/4058/10292" target="_blank" rel="noreferrer">historical Lithuanian railway-map study</a></p><p class="confidence"><strong>Confidence:</strong> moderate that Kovno offers a real historical fit; low for the exact branch drawn.</p>`, {maxWidth:520, minWidth:320})
+  .addTo(theoreticalNarrowGauge);
+L.polyline(marchToFrontHypothesis, {color:'#8b5a2b', weight:5, opacity:.76, dashArray:'2 11'})
+  .bindTooltip('THEORETICAL: march toward the Dünaburg sector', {sticky:true})
+  .bindPopup(`<h2>Theoretical march toward the Dünaburg front</h2><p>After the small-gauge journey, Jacques describes several difficult days marching through Russian villages, farms, snow and mud before reaching the front. RIR 59 and the 1st Reserve Division fought before Dünaburg from September 1915 and remained in that sector during the winter.</p><p class="notice"><strong>Theoretical reconstruction:</strong> Ukmergė and Utena are corridor points only. Jacques did not name them, and the polyline does not claim that he followed this exact road.</p><p><strong>Supporting data:</strong> <a href="../transcripts/chronological_edited_transcript.md" target="_blank">oral-history march account</a> · <a href="https://www.leo-bw.de/detail/-/Detail/details/DOKUMENT/wlb_digitalisate/digibib-bsz5005588845/Die%20Geschichte%20des%20Reserve-Infanterie-Regiments%20Nr%2059%20im%20Weltkriege%201914%20-%201918%20nach%20amtlichen%20Unterlagen%20und%20Berichten" target="_blank" rel="noreferrer">RIR 59 regimental history</a></p><p class="confidence"><strong>Confidence:</strong> high for the regiment’s Dünaburg theater; low for the personal marching corridor.</p>`, {maxWidth:520, minWidth:320})
+  .addTo(theoreticalNarrowGauge);
+[
+  {name:'Tilsit — narrated departure',lat:55.083,lon:21.883},
+  {name:'Kovno / Kaunas — theoretical river landing',lat:54.899,lon:23.886},
+  {name:'Northern Kovno fortress edge — theoretical rail unloading area',lat:54.970,lon:23.920},
+  {name:'Dünaburg sector — documented RIR 59 theater',lat:55.875,lon:26.535}
+].forEach((s,i) => {
+  L.circleMarker([s.lat,s.lon], {radius:i===1||i===2?6:5, color:'#fff', weight:2, fillColor:i===1||i===2?'#d97706':'#1776a8', fillOpacity:1})
+    .bindTooltip(s.name, {direction:'top'})
+    .addTo(theoreticalNarrowGauge);
+});
+overlays['THEORETICAL — 1915 boat + narrow-gauge route'] = theoreticalNarrowGauge;
+
+// S3 has one leading candidate in the synthesis path. These two nearby points
+// preserve viable alternatives without making the journey line visit all three.
+const trainingAlternatives = L.layerGroup().addTo(map);
+[
+  {
+    label:'Iława / Deutsch Eylau — training alternative', lat:53.596, lon:19.565,
+    detail:'IR 59’s I and II Battalions were garrisoned at Deutsch Eylau before the war. It was close to the frontier and connected to the East Prussian railway system, but Jacques supplied no town name or battalion.',
+    evidence:'<a href="https://powiatszczycienskihistoria.blogspot.com/2026/03/infanterie-regiment-nr-59.html" target="_blank" rel="noreferrer">IR 59 garrison evidence</a>',
+    photo:'assets/location_ilawa_station_modern.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:698127_I%C5%82awa_dworzec_kolejowy.JPG', photoCaption:'Modern view of Iława Główna’s 1905 station building. Photo by Dawid Galus, CC BY-SA 3.0 PL.'
+  },
+  {
+    label:'Grudziądz / Graudenz — recruit-depot alternative', lat:53.484, lon:18.753,
+    detail:'A surviving May 1915 soldier’s address names the 2nd Recruit Depot, IR 59 Ersatz Battalion, “Group near Graudenz.” This establishes an IR 59 recruiting presence in the border region, but does not place Jacques there.',
+    evidence:'<a href="https://ersterwk.heimatverein-raesfeld.de/eduard-stenert.html" target="_blank" rel="noreferrer">dated 1915 recruit-depot evidence</a>',
+    photo:'assets/location_graudenz_narrow_gauge_1914.jpg', photoPage:'https://commons.wikimedia.org/wiki/File:Hugo_Allonge_on_narrow_gauge_locomotive_%27Hertha%27_in_Graudenz,_1914.jpg', photoCaption:'Narrow-gauge locomotive “Hertha” in Graudenz, 1914. The photograph illustrates the contemporary military-rail environment, not Jacques’s unit.'
+  }
+].forEach((s, i) => {
+  const alternativeIcon = L.divIcon({className:'numbered-marker', html:`<div class="pin alternative">${String.fromCharCode(65+i)}</div>`, iconSize:[29,29], iconAnchor:[14,14]});
+  const alternativePhoto = `<a href="${s.photo}" target="_blank"><img class="scan-excerpt" src="${s.photo}" alt="${s.label}"></a><p class="source-note">${s.photoCaption} <a href="${s.photoPage}" target="_blank" rel="noreferrer">Source and license</a>.</p>`;
+  L.marker([s.lat,s.lon], {icon:alternativeIcon, zIndexOffset:1450})
+    .bindTooltip(s.label, {direction:'top', offset:[0,-10]})
+    .bindPopup(`<h2>${s.label}</h2><p>${s.detail}</p>${alternativePhoto}<p><strong>Supporting data:</strong> ${s.evidence} · <a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited transcript</a></p><p class="confidence"><strong>Confidence:</strong> plausible alternative, not a confirmed personal location.</p>`, {maxWidth:500, minWidth:320})
+    .addTo(trainingAlternatives);
+});
+overlays['Alternatives — 1915 training area'] = trainingAlternatives;
+
+// Historical workplace candidate derived from Jacques's spoken “Resto
+// Wallander.” Coordinates identify the Quai Saint-Jean address area, not a
+// surviving building: numbers 2–5 were destroyed in the 1944 bombardment.
+const strasbourgRestaurant = L.layerGroup().addTo(map);
+const restaurantIcon = L.divIcon({
+  className:'numbered-marker',
+  html:'<div class="pin alternative">R</div>',
+  iconSize:[29,29], iconAnchor:[14,14]
+});
+L.marker([48.5839, 7.7395], {icon:restaurantIcon, zIndexOffset:1900})
+  .bindTooltip('Probable restaurant — Zur Walhalla', {direction:'top', offset:[0,-10]})
+  .bindPopup(`<h2>Probable “Resto Wallander” — Zur Walhalla</h2>
+    <p class="event-date"><strong>Before military service and again in November 1918</strong><br><span class="date-kind">Narrated employment; establishment inferred</span></p>
+    <p><strong>Historical address:</strong> Johannesstaden 4, Straßburg — approximately 4 Quai Saint-Jean today, near the main railway station.</p>
+    <p><strong>Jacques’s words:</strong> “I was working in Strasbourg by Resto Wallander.” A Strasbourg doctor immediately replied that it was “a nice restaurant” and that he knew it.</p>
+    <p><strong>Why this is the leading match:</strong> A period city guide explicitly lists <em>Zur Walhalla</em> as a restaurant serving Speyer beer at Johannesstaden 4 “near the station.” The name is a plausible phonetic/transcription match for “Wallander.” In 1900 it was also recorded as <em>Wirthschaft Walhalla</em> and was used as a meeting place by local organizations.</p>
+    <p><strong>November 1918 corroboration:</strong> Jacques recalled that the restaurant was packed with French soldiers shortly after he resumed work. The formal French entry of 22 November 1918 is photographed on nearby rue du Faubourg-National, making this location unusually compatible with his account.</p>
+    <p class="notice"><strong>Evidence limit:</strong> No surviving employee list yet names Jacques, and the restaurant’s 1914/1918 proprietor has not been verified. The pin is placed in the historical address area; wartime destruction altered the numbered buildings.</p>
+    <p><strong>Supporting data:</strong> <a href="../transcripts/chronological_edited_transcript.md" target="_blank">edited oral-history transcript</a> · <a href="https://dokumen.pub/beschreibung-der-stadt-straburg-und-des-mnsters-14-verb-u-verm-aufl-reprint-2019-9783111456157-9783111088761.html" target="_blank" rel="noreferrer">period Strasbourg guide</a> · <a href="https://digital.ulb.hhu.de/i3f/manifest/11730148/search?q=Walhalla" target="_blank" rel="noreferrer">1900 address-book results</a> · <a href="https://archives.strasbourg.eu/ark:/39332/vtaef691ef6989f60d3/daogrp/0/1" target="_blank" rel="noreferrer">1914 Strasbourg address book</a> · <a href="https://collections.musees.strasbourg.eu/fr/document/entre-des-troupes-franaises-strasbourg-le-22-novembre-1918/5ee338b7461cda28a3a900b0" target="_blank" rel="noreferrer">22 November parade photograph</a> · <a href="https://www.antoinewendling.eu/les-bombardements-de-strasbourg-en-1944/" target="_blank" rel="noreferrer">historical postcard and site account</a></p>
+    <p class="confidence"><strong>Confidence:</strong> strong candidate; not proven.</p>`,
+    {maxWidth:520, minWidth:320})
+  .addTo(strasbourgRestaurant);
+overlays['Candidate — Strasbourg restaurant'] = strasbourgRestaurant;
+
+const routeChoices = {
+  '1 — Narrated locations': narratedRoute,
+  '2 — Archival / unit route': archival,
+  '3 — Combined synthesis': synthesisRoute
+};
+L.control.layers(routeChoices, overlays, {collapsed:false}).addTo(map);
+map.on('baselayerchange', event => {
+  if (event.layer === narratedRoute) map.fitBounds(narratedBounds, {padding:[35,35]});
+  if (event.layer === archival) map.fitBounds(archivalBounds, {padding:[35,35]});
+  if (event.layer === synthesisRoute) map.fitBounds(synthesisBounds, {padding:[35,35]});
+});
+L.control.scale({imperial:true, metric:true}).addTo(map);
+const legend = L.control({position:'bottomright'});
+legend.onAdd = () => { const d=L.DomUtil.create('div','legend'); d.innerHTML='<strong>Journey routes</strong><br><svg class="route-key" viewBox="0 0 31 8" aria-hidden="true"><line x1="0" y1="4" x2="31" y2="4" stroke="#b44d31" stroke-width="3" stroke-dasharray="8 7"/></svg><span class="key"></span>Narrated locations<br><svg class="route-key" viewBox="0 0 31 8" aria-hidden="true"><line x1="0" y1="4" x2="31" y2="4" stroke="#7c3f87" stroke-width="4" stroke-dasharray="4 7"/></svg><span class="key" style="background:#7c3f87"></span>Archival / unit route<br><svg class="route-key" viewBox="0 0 31 8" aria-hidden="true"><line x1="0" y1="4" x2="31" y2="4" stroke="#a56a00" stroke-width="4" stroke-dasharray="12 6"/></svg><span class="key" style="background:#a56a00"></span>Combined synthesis<br><strong>Point qualifications</strong><br><span class="key uncertain"></span>Approximate or disputed narrated point<br><span class="key" style="background:#fff4d8;border:2px dashed #8a6137;width:8px;height:8px"></span>Alternative candidate<br><span class="key" style="background:#cf2f43"></span>Leading wound hypothesis<br><strong>Context overlays</strong><br><span class="front-key" style="border-color:#087f8c"></span>Inferred evacuation railway<br><svg class="route-key" viewBox="0 0 31 8" aria-hidden="true"><line x1="0" y1="4" x2="31" y2="4" stroke="#1776a8" stroke-width="4" stroke-dasharray="8 6"/></svg>Theoretical 1915 river/rail route<br><span class="front-key" style="border-color:#2867a8"></span>Western Front 1915–16<br><span class="front-key" style="border-color:#7a3f98"></span>Eastern Front Mar. 1916<br><span class="front-key" style="border-color:#cf2f43"></span>Brusilov maximum Sept. 1916<br><span class="front-key" style="border-color:#3b8b62"></span>Italian Front 1915–17'; return d; };
+legend.addTo(map);
+map.attributionControl.setPrefix('Leaflet | Basemap: Natural Earth (public domain)');
+map.fitBounds(L.latLngBounds(stops.filter(s=>s.n!==15).map(s=>[s.lat,s.lon])), {padding:[35,35]});
+</script>
+</body>
+</html>

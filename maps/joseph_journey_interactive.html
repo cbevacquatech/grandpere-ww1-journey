@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joseph's Interactive Journey Map</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <style>
+    html, body { height:100%; margin:0; font-family:system-ui,sans-serif; color:#26383e; }
+    body { display:grid; grid-template-rows:auto 1fr; background:#f3efe4; }
+    header { padding:12px 18px; background:#f8f4e9; border-bottom:1px solid #c8bfae; }
+    h1 { font:700 24px Georgia,serif; margin:0 0 4px; color:#173d49; }
+    header p { margin:0; font-size:13px; } #map { min-height:480px; background:#b9dbe7; }
+    .numbered-marker { background:none; border:0; }
+    .pin { width:25px; height:25px; border-radius:50%; display:grid; place-items:center; color:#fff; font:700 12px system-ui; background:#563d78; border:2px solid #fff; box-shadow:0 1px 5px #0008; }
+    .pin.uncertain { color:#7b3151; background:#fffaf0; border:2px dashed #7b3151; }
+    .leaflet-popup-content h2 { font:700 17px Georgia,serif; margin:0 0 5px; color:#34204d; }
+    .leaflet-popup-content p { margin:5px 0; } .confidence { font-size:12px; color:#6c4b32; }
+    .legend { background:#fff; padding:8px 10px; border-radius:5px; box-shadow:0 1px 5px #0005; line-height:1.5; }
+    .key { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; background:#563d78; }
+    .key.uncertain { background:#fffaf0; border:2px dashed #7b3151; width:8px; height:8px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Joseph's Second World War journey</h1>
+  <p>A separate reconstruction of the narrator's brother. Scroll or pinch to zoom; click points for evidence. Repeat visits are slightly offset so each remains clickable.</p>
+</header>
+<div id="map" aria-label="Interactive map of Joseph's Second World War journey"></div>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/offline_countries.js"></script>
+<script>
+const map=L.map('map').setView([49,7],5);
+L.geoJSON(OFFLINE_COUNTRIES,{
+ style:{color:'#9d9382',weight:0.7,fillColor:'#eee7d4',fillOpacity:1},
+ onEachFeature:(feature,layer)=>feature.properties.name&&layer.bindTooltip(feature.properties.name,{sticky:true,opacity:.75})
+}).addTo(map).bringToBack();
+const stops=[
+ {n:1,name:'Alsace home / French Army',lat:48.30,lon:7.35,u:1,confidence:'Medium for region',evidence:'Joseph was drafted into the French Army, served until France collapsed, then went home. No unit or station is named.'},
+ {n:2,name:'Alsace under German control',lat:48.32,lon:7.38,u:1,confidence:'High for region',evidence:'After about three months at home, Alsace was annexed and Joseph was drafted into the German Army. Marker offset slightly from the same home area for clickability.'},
+ {n:3,name:'Training in Hungary',lat:47.16,lon:19.50,u:1,confidence:'High for country; low for point',evidence:'The transcript explicitly says his German Army training was in Hungary, but gives no town.'},
+ {n:4,name:'Normandy',lat:49.18,lon:-0.36,u:1,confidence:'High for region; low for point',evidence:'Joseph went with German forces to Normandy and hid in an abandoned farm during the Allied invasion.'},
+ {n:5,name:'England as a prisoner of war',lat:51.10,lon:-1.05,u:1,confidence:'High for country; low for point',evidence:'British soldiers took him to England as a POW. This regional point is separated from the later Camberley identification.'},
+ {n:6,name:'Camberley-area POW camp?',lat:51.34,lon:-0.74,u:1,confidence:'Medium–low',evidence:'The transcript says the camp was believed to be near Camberley; no camp name is supplied.'},
+ {n:7,name:'Transfer back to France / Free French Army',lat:48.86,lon:2.35,u:1,confidence:'Low for point',evidence:'Once identified as Alsatian, he was returned to France and joined the Free French under de Gaulle. Transfer location is unclear.'},
+ {n:8,name:'Rhône Valley campaign',lat:45.3,lon:4.8,u:1,confidence:'Medium for corridor',evidence:'The account says he fought “up the Rhône valley”; this point represents the corridor, not a named battle.'},
+ {n:9,name:'Rhine Valley',lat:48.7,lon:7.7,u:1,confidence:'Medium for corridor',evidence:'He then entered the Rhine Valley and encountered skirmishes as the war neared its end.'},
+ {n:10,name:'Return to the family farm in Alsace',lat:48.28,lon:7.32,u:1,confidence:'High for region',evidence:'He was released because his mother and sister needed him on the family farm. Marker offset slightly from stops 1–2 for clickability.'}
+];
+function icon(s){return L.divIcon({className:'numbered-marker',html:`<div class="pin ${s.u?'uncertain':''}">${s.n}</div>`,iconSize:[29,29],iconAnchor:[14,14]});}
+const route=L.layerGroup().addTo(map);
+L.polyline(stops.map(s=>[s.lat,s.lon]),{color:'#69468d',weight:4,opacity:.8,dashArray:'9 7'}).addTo(route);
+stops.forEach(s=>L.marker([s.lat,s.lon],{icon:icon(s),zIndexOffset:1000+s.n})
+ .bindTooltip(`${s.n}. ${s.name}`,{direction:'top',offset:[0,-10]})
+ .bindPopup(`<h2>${s.n}. ${s.name}</h2><p>${s.evidence}</p><p class="confidence"><strong>Confidence:</strong> ${s.confidence}</p>`).addTo(route));
+L.control.layers(null,{'Joseph’s reconstructed route':route},{collapsed:false}).addTo(map);
+L.control.scale({imperial:true,metric:true}).addTo(map);
+const legend=L.control({position:'bottomright'}); legend.onAdd=()=>{const d=L.DomUtil.create('div','legend');d.innerHTML='<span class="key uncertain"></span>Approximate or regional point';return d;};legend.addTo(map);
+map.attributionControl.setPrefix('Leaflet | Basemap: Natural Earth (public domain)');
+map.fitBounds(L.latLngBounds(stops.map(s=>[s.lat,s.lon])),{padding:[40,40]});
+</script>
+</body>
+</html>

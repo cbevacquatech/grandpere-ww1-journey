@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jacques Schneider — Chronological Transcript Player</title>
+  <style>
+    :root { --ink:#20201d; --paper:#f7f2e8; --card:#fffdf7; --muted:#6d695f; --rule:#d8cebc; --red:#8e2e2b; --blue:#234d61; --gold:#e2b45d; --active:#fff0bd; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:16px/1.55 Georgia, "Times New Roman", serif; }
+    button, input, textarea, select { font:inherit; }
+    .masthead { padding:34px max(20px, calc((100vw - 1120px)/2)); color:#fff; background:linear-gradient(135deg,#173844,#28576b); border-bottom:5px solid var(--gold); }
+    .masthead h1 { margin:0 0 6px; font-size:clamp(26px,4vw,46px); line-height:1.1; }
+    .masthead p { max-width:850px; margin:6px 0; color:#e9eef0; }
+    .masthead a { color:#ffe4a9; }
+    .site-nav { display:flex; align-items:center; gap:7px; margin:0 0 20px; font:700 13px/1.2 system-ui,sans-serif; }
+    .site-nav .brand { margin-right:auto; color:#fff; font-family:Georgia,serif; }
+    .site-nav a { padding:6px 10px; border:1px solid #ffffff80; border-radius:5px; color:#fff; background:#ffffff12; text-decoration:none; }
+    .site-nav a[aria-current="page"] { color:#173844; border-color:#ffe4a9; background:#ffe4a9; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) 285px; gap:24px; max-width:1120px; margin:0 auto; padding:24px 20px 190px; }
+    .tools { position:sticky; top:12px; align-self:start; padding:16px; border:1px solid var(--rule); border-radius:8px; background:var(--card); box-shadow:0 5px 18px #3c33231a; }
+    .tools h2 { margin:0 0 10px; font-size:18px; }
+    .tools label { display:block; margin-top:12px; color:var(--muted); font:700 12px/1.3 system-ui,sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+    .tools input[type="search"], .tools select { width:100%; margin-top:4px; padding:8px; border:1px solid #aaa08f; border-radius:5px; background:#fff; }
+    .tools button, .comment-actions button, .transport button, .line-play { cursor:pointer; border:1px solid #8a806f; border-radius:5px; background:#fff; color:var(--ink); }
+    .tools button { width:100%; margin-top:8px; padding:7px 9px; }
+    .tools button:hover, .transport button:hover, .line-play:hover { background:#f4e7c9; }
+    .tools .small { margin:11px 0 0; color:var(--muted); font:12px/1.45 system-ui,sans-serif; }
+    .section-heading { scroll-margin-top:18px; margin:34px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--rule); color:var(--blue); }
+    h1.section-heading { font-size:28px; } h2.section-heading { font-size:24px; } h3.section-heading { font-size:19px; border:0; }
+    .context { margin:10px 8px 14px; color:#615c53; }
+    .context.blockquote { padding:8px 14px; border-left:4px solid #b7a98e; background:#eee7d9; font-style:italic; }
+    .context.editor-note { padding:9px 12px; border-left:4px solid var(--red); background:#f5e4df; font:13px/1.45 system-ui,sans-serif; }
+    .cue { position:relative; scroll-margin:100px; display:grid; grid-template-columns:88px minmax(0,1fr) 34px; gap:12px; margin:7px 0; padding:12px; border:1px solid transparent; border-radius:7px; background:var(--card); box-shadow:0 1px 2px #342b1f10; transition:.18s; }
+    .cue:hover { border-color:#cbbb9f; }
+    .cue.active { border-color:#c38b22; background:var(--active); box-shadow:0 0 0 3px #e7bd5b42; }
+    .cue.has-comments::after { content:attr(data-comment-count); position:absolute; right:-7px; top:-7px; min-width:22px; height:22px; padding:0 5px; border-radius:12px; color:#fff; background:var(--red); font:700 12px/22px system-ui,sans-serif; text-align:center; }
+    .cue.struck .line-text { color:#716c63; }
+    .timestamp { color:var(--blue); font:700 12px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .source-tag { display:block; margin-top:4px; color:var(--muted); font:10px/1.2 system-ui,sans-serif; text-transform:uppercase; }
+    .speaker { color:var(--red); font-weight:700; }
+    .line-text { cursor:pointer; min-width:0; }
+    .line-text del { color:#80786c; }
+    .line-play { width:32px; height:32px; padding:0; font:16px/30px system-ui,sans-serif; }
+    .empty { padding:30px; text-align:center; color:var(--muted); }
+    .player { position:fixed; z-index:1000; left:0; right:0; bottom:0; padding:11px max(16px,calc((100vw - 1120px)/2)); color:#fff; background:#102d38f5; border-top:4px solid var(--gold); box-shadow:0 -5px 20px #0005; }
+    .now { display:flex; align-items:baseline; gap:10px; min-height:24px; }
+    #now-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700; }
+    #queue-position { margin-left:auto; color:#cad7da; font:12px system-ui,sans-serif; white-space:nowrap; }
+    .transport { display:grid; grid-template-columns:auto auto minmax(180px,1fr) auto; gap:8px; align-items:center; }
+    .transport button { height:34px; min-width:40px; padding:0 10px; border-color:#ffffff66; color:#fff; background:#ffffff16; }
+    audio { width:100%; height:36px; }
+    .toggle { font:12px system-ui,sans-serif; white-space:nowrap; }
+    dialog { width:min(660px,calc(100vw - 24px)); max-height:calc(100vh - 36px); padding:0; border:0; border-radius:9px; box-shadow:0 14px 50px #0008; }
+    dialog::backdrop { background:#0c2028b8; }
+    .dialog-head { display:flex; gap:10px; align-items:center; padding:14px 18px; color:#fff; background:var(--blue); }
+    .dialog-head h2 { flex:1; margin:0; font-size:20px; }
+    .dialog-head button { color:#fff; background:transparent; border:1px solid #ffffff88; border-radius:4px; cursor:pointer; }
+    .dialog-body { max-height:calc(100vh - 100px); overflow:auto; padding:18px; background:var(--card); }
+    #comment-quote { margin:0 0 16px; padding:12px; border-left:4px solid var(--gold); background:#f3ead8; }
+    .comment-list { display:grid; gap:8px; margin:0 0 18px; }
+    .comment { padding:10px; border:1px solid var(--rule); border-radius:5px; background:#fff; }
+    .comment-meta { color:var(--muted); font:11px system-ui,sans-serif; }
+    .comment p { margin:5px 0 0; white-space:pre-wrap; }
+    .comment-form label { display:block; margin:9px 0 3px; font:700 12px system-ui,sans-serif; }
+    .comment-form input, .comment-form textarea { width:100%; padding:8px; border:1px solid #9e9586; border-radius:5px; }
+    .comment-form textarea { min-height:100px; resize:vertical; }
+    .comment-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+    .comment-actions button { padding:7px 13px; }
+    .comment-actions .primary { color:#fff; background:var(--red); border-color:var(--red); }
+    @media (max-width:780px) {
+      .layout { display:block; padding-bottom:215px; }
+      .tools { position:static; margin-bottom:22px; }
+      .cue { grid-template-columns:72px minmax(0,1fr) 32px; gap:8px; padding:10px 8px; }
+      .transport { grid-template-columns:auto auto 1fr; }
+      .transport audio { grid-column:1/-1; grid-row:1; }
+      .toggle { grid-column:3; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <nav class="site-nav" aria-label="Jacques Schneider archive">
+      <span class="brand">Jacques Schneider archive</span>
+      <a href="narrator_journey_interactive.html">Journey map</a>
+      <a href="chronological_transcript_player.html" aria-current="page">Audio &amp; transcript</a>
+    </nav>
+    <h1>Jacques Schneider: chronological transcript</h1>
+    <p>A listening edition of the combined edited transcript. Playback follows the editorial order of the Markdown—even when that order moves between different moments in the two original recordings.</p>
+    <p><a href="../transcripts/chronological_edited_transcript.md">Open the source Markdown</a></p>
+  </header>
+
+  <main class="layout">
+    <article id="transcript" aria-label="Chronological transcript"></article>
+    <aside class="tools">
+      <h2>Transcript tools</h2>
+      <label for="search">Search transcript</label>
+      <input id="search" type="search" placeholder="Place, person, phrase…">
+      <label for="speed">Playback speed</label>
+      <select id="speed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+      <button id="export-comments" type="button">Export correction comments</button>
+      <button id="import-comments" type="button">Import correction comments</button>
+      <input id="comment-file" type="file" accept="application/json,.json" hidden>
+      <p id="comment-summary" class="small">No saved comments.</p>
+      <p class="small">Click transcript text to leave a correction comment. Comments are saved in this browser. Export the JSON file to share them; another reader can import it here.</p>
+      <p class="small"><strong>Original audio remains unchanged.</strong> This page seeks into the local MP3 files and assembles a virtual chronological playlist.</p>
+    </aside>
+  </main>
+
+  <footer class="player">
+    <div class="now"><span id="now-title">Choose a transcript line to begin</span><span id="queue-position"></span></div>
+    <div class="transport">
+      <button id="previous" type="button" aria-label="Previous transcript line">◀</button>
+      <button id="next" type="button" aria-label="Next transcript line">▶</button>
+      <audio id="audio" controls preload="metadata"></audio>
+      <label class="toggle"><input id="continuous" type="checkbox" checked> Continue chronologically</label>
+    </div>
+  </footer>
+
+  <dialog id="comment-dialog">
+    <div class="dialog-head"><h2>Suggest a transcript correction</h2><button id="close-dialog" type="button">Close</button></div>
+    <div class="dialog-body">
+      <blockquote id="comment-quote"></blockquote>
+      <div id="comment-list" class="comment-list"></div>
+      <form id="comment-form" class="comment-form">
+        <label for="comment-name">Your name (optional)</label>
+        <input id="comment-name" autocomplete="name" placeholder="Name or initials">
+        <label for="comment-text">Correction or listening note</label>
+        <textarea id="comment-text" required placeholder="What do you hear? Include a proposed replacement when possible."></textarea>
+        <div class="comment-actions"><button type="button" id="cancel-comment">Cancel</button><button class="primary" type="submit">Save comment</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="vendor/chronological_transcript_data.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const data = window.CHRONOLOGICAL_TRANSCRIPT;
+    const transcript = document.getElementById('transcript');
+    const audio = document.getElementById('audio');
+    const nowTitle = document.getElementById('now-title');
+    const queuePosition = document.getElementById('queue-position');
+    const continuous = document.getElementById('continuous');
+    const speed = document.getElementById('speed');
+    const dialog = document.getElementById('comment-dialog');
+    const commentQuote = document.getElementById('comment-quote');
+    const commentList = document.getElementById('comment-list');
+    const commentSummary = document.getElementById('comment-summary');
+    const storageKey = 'jacques-chronological-transcript-comments-v1';
+    const cues = data.entries.filter(entry => entry.type === 'cue');
+    const cueById = new Map(cues.map((cue, index) => [cue.id, {...cue, queueIndex:index}]));
+    const rowById = new Map();
+    let active = null;
+    let pendingAutoplay = false;
+    let comments = loadComments();
+    let commentingOn = null;
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+    function inlineMarkdown(value) {
+      let safe = escapeHtml(value).replace(/\\\[|\\\]/g, match => match.slice(1));
+      safe = safe.replace(/~~(.+?)~~/g, '<del>$1</del>');
+      safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+      safe = safe.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      return safe;
+    }
+    function loadComments() {
+      try { return JSON.parse(localStorage.getItem(storageKey)) || {}; }
+      catch (_) { return {}; }
+    }
+    function saveComments() {
+      localStorage.setItem(storageKey, JSON.stringify(comments));
+      refreshCommentBadges();
+    }
+    function render() {
+      const fragment = document.createDocumentFragment();
+      for (const entry of data.entries) {
+        if (entry.type === 'heading') {
+          const level = Math.min(Math.max(entry.level, 1), 3);
+          const heading = document.createElement(`h${level}`);
+          heading.className = 'section-heading';
+          heading.textContent = entry.text;
+          fragment.appendChild(heading);
+        } else if (entry.type === 'context') {
+          const context = document.createElement('div');
+          context.className = `context ${entry.style}`;
+          context.innerHTML = inlineMarkdown(entry.text);
+          fragment.appendChild(context);
+        } else {
+          const row = document.createElement('section');
+          row.className = 'cue';
+          if (entry.struck) row.classList.add('struck');
+          row.id = entry.id;
+          row.dataset.cueId = entry.id;
+          row.dataset.search = `${entry.speaker} ${entry.text} ${entry.source}`.toLowerCase();
+          const renderedSpeech = `<span class="speaker">${escapeHtml(entry.speaker)}:</span> ${inlineMarkdown(entry.text)}`;
+          row.innerHTML = `<div class="timestamp">${entry.startLabel}<span class="source-tag">Recording ${entry.recording.toUpperCase()}</span></div><div class="line-text" tabindex="0" role="button" aria-label="Comment on this transcript line">${entry.struck ? `<del title="Struck through in the edited transcript">${renderedSpeech}</del>` : renderedSpeech}</div><button class="line-play" type="button" title="Play this line" aria-label="Play this line">▶</button>`;
+          row.querySelector('.line-play').addEventListener('click', event => { event.stopPropagation(); playCue(entry.id); });
+          const lineText = row.querySelector('.line-text');
+          lineText.addEventListener('click', () => openComments(entry.id));
+          lineText.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openComments(entry.id); } });
+          rowById.set(entry.id, row);
+          fragment.appendChild(row);
+        }
+      }
+      transcript.replaceChildren(fragment);
+      refreshCommentBadges();
+    }
+    function setActive(cue) {
+      if (active) rowById.get(active.id)?.classList.remove('active');
+      active = cue;
+      const row = rowById.get(cue.id);
+      row?.classList.add('active');
+      row?.scrollIntoView({behavior:'smooth', block:'center'});
+      nowTitle.textContent = `${cue.speaker}: ${cue.text.replace(/~~|\\[\[\]]/g, '')}`;
+      queuePosition.textContent = `${cue.queueIndex + 1} / ${cues.length} · Recording ${cue.recording.toUpperCase()} ${cue.startLabel}`;
+      document.title = `${cue.startLabel} — Jacques Schneider transcript`;
+    }
+    function playCue(id) {
+      const cue = cueById.get(id);
+      if (!cue) return;
+      setActive(cue);
+      pendingAutoplay = true;
+      const wanted = new URL(data.audio[cue.recording], location.href).href;
+      if (audio.src !== wanted) {
+        audio.src = data.audio[cue.recording];
+        audio.load();
+      } else {
+        startActiveCue();
+      }
+    }
+    function startActiveCue() {
+      if (!active) return;
+      pendingAutoplay = false;
+      audio.currentTime = active.start;
+      audio.playbackRate = Number(speed.value);
+      audio.play().catch(() => { pendingAutoplay = true; });
+    }
+    function adjacent(offset, autoplay = true) {
+      const index = active ? active.queueIndex + offset : 0;
+      const cue = cues[Math.max(0, Math.min(cues.length - 1, index))];
+      if (!cue) return;
+      if (autoplay) playCue(cue.id); else setActive(cue);
+    }
+    function finishCue() {
+      audio.pause();
+      if (continuous.checked && active && active.queueIndex < cues.length - 1) adjacent(1, true);
+    }
+    function openComments(id) {
+      const cue = cueById.get(id);
+      commentingOn = id;
+      commentQuote.textContent = `${cue.speaker}: ${cue.text}`;
+      renderCommentList();
+      dialog.showModal();
+      document.getElementById('comment-text').focus();
+    }
+    function renderCommentList() {
+      commentList.replaceChildren();
+      const items = comments[commentingOn] || [];
+      if (!items.length) {
+        const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'No comments on this line yet.'; commentList.appendChild(empty); return;
+      }
+      items.forEach((item, index) => {
+        const card = document.createElement('div'); card.className = 'comment';
+        const meta = document.createElement('div'); meta.className = 'comment-meta'; meta.textContent = `${item.name || 'Anonymous'} · ${new Date(item.created).toLocaleString()}`;
+        const text = document.createElement('p'); text.textContent = item.text;
+        const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete'; remove.addEventListener('click', () => { comments[commentingOn].splice(index, 1); if (!comments[commentingOn].length) delete comments[commentingOn]; saveComments(); renderCommentList(); });
+        card.append(meta, text, remove); commentList.appendChild(card);
+      });
+    }
+    function refreshCommentBadges() {
+      let total = 0;
+      rowById.forEach((row, id) => {
+        const count = (comments[id] || []).length; total += count;
+        row.classList.toggle('has-comments', count > 0);
+        if (count) row.dataset.commentCount = count; else delete row.dataset.commentCount;
+      });
+      commentSummary.textContent = total ? `${total} saved correction comment${total === 1 ? '' : 's'}.` : 'No saved comments.';
+    }
+
+    audio.addEventListener('loadedmetadata', () => { if (pendingAutoplay) startActiveCue(); });
+    audio.addEventListener('timeupdate', () => { if (active && !audio.paused && audio.currentTime >= active.end - .06) finishCue(); });
+    audio.addEventListener('play', () => { if (!active) playCue(cues[0].id); });
+    speed.addEventListener('change', () => { audio.playbackRate = Number(speed.value); });
+    document.getElementById('previous').addEventListener('click', () => adjacent(-1));
+    document.getElementById('next').addEventListener('click', () => adjacent(1));
+    document.getElementById('search').addEventListener('input', event => {
+      const query = event.target.value.trim().toLowerCase(); let visible = 0;
+      rowById.forEach(row => { const show = !query || row.dataset.search.includes(query); row.hidden = !show; if (show) visible++; });
+      queuePosition.textContent = query ? `${visible} matching lines` : (active ? `${active.queueIndex + 1} / ${cues.length}` : `${cues.length} lines`);
+    });
+    document.getElementById('close-dialog').addEventListener('click', () => dialog.close());
+    document.getElementById('cancel-comment').addEventListener('click', () => dialog.close());
+    document.getElementById('comment-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const name = document.getElementById('comment-name').value.trim();
+      const field = document.getElementById('comment-text');
+      const text = field.value.trim(); if (!text || !commentingOn) return;
+      (comments[commentingOn] ||= []).push({name, text, created:new Date().toISOString()});
+      field.value = ''; saveComments(); renderCommentList();
+    });
+    document.getElementById('export-comments').addEventListener('click', () => {
+      const payload = {format:'jacques-transcript-comments', version:1, exported:new Date().toISOString(), comments};
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}));
+      const link = document.createElement('a'); link.href = url; link.download = 'jacques-transcript-corrections.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    document.getElementById('import-comments').addEventListener('click', () => document.getElementById('comment-file').click());
+    document.getElementById('comment-file').addEventListener('change', async event => {
+      const file = event.target.files[0]; if (!file) return;
+      try {
+        const imported = JSON.parse(await file.text());
+        if (imported.format !== 'jacques-transcript-comments' || typeof imported.comments !== 'object') throw new Error('Unsupported correction file');
+        Object.entries(imported.comments).forEach(([id, items]) => { if (cueById.has(id) && Array.isArray(items)) comments[id] = [...(comments[id] || []), ...items]; });
+        saveComments(); alert('Correction comments imported.');
+      } catch (error) { alert(`Could not import comments: ${error.message}`); }
+      event.target.value = '';
+    });
+
+    render();
+    queuePosition.textContent = `${cues.length} playable lines`;
+  })();
+  </script>
+</body>
+</html>
